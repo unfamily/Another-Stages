@@ -1,47 +1,50 @@
 package net.unfamily.anotherstages.mixin;
 
-import net.minecraft.core.BlockPos;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.Optional;
 
 /**
- * Drops stage-blocked cooking recipes so the furnace cannot progress them.
+ * Vanilla furnace family (no FastFurnace): prevent stage-locked cooking from starting.
+ * When FastFurnace is present this mixin is skipped; see FastFurnaceRecipeMixin.
+ * <p>
+ * Passes {@code be = null} into the machine gate so world-stage rules apply without an owner
+ * (normal for vanilla furnaces).
  */
 @Mixin(AbstractFurnaceBlockEntity.class)
 public abstract class AbstractFurnaceBlockEntityMixin {
-    @Redirect(
-            method = "serverTick",
-            remap = false,
+    @WrapOperation(
+            method = {"serverTick", "getTotalCookTime"},
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/crafting/RecipeManager$CachedCheck;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/server/level/ServerLevel;)Ljava/util/Optional;",
-                    remap = false))
-    private static <I extends RecipeInput, T extends Recipe<I>> Optional<RecipeHolder<T>> anotherStages$gateFurnaceRecipe(
-            RecipeManager.CachedCheck<I, T> check,
-            I input,
-            ServerLevel level,
-            ServerLevel levelArg,
-            BlockPos pos,
-            BlockState state,
-            AbstractFurnaceBlockEntity entity) {
-        Optional<RecipeHolder<T>> recipe = check.getRecipeFor(input, level);
-        if (AsConfig.mixinFurnace()
-                && recipe.isPresent()
-                && RecipeStageGate.isBlockedForMachine(recipe.get().id(), entity, level)) {
-            return Optional.empty();
+                    target = "Lnet/minecraft/world/item/crafting/RecipeManager$CachedCheck;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/server/level/ServerLevel;)Ljava/util/Optional;"))
+    private static <I extends RecipeInput, T extends net.minecraft.world.item.crafting.Recipe<I>>
+            Optional<RecipeHolder<T>> anotherStages$gateFurnaceRecipe(
+                    RecipeManager.CachedCheck<I, T> check,
+                    I input,
+                    ServerLevel level,
+                    Operation<Optional<RecipeHolder<T>>> original) {
+        Optional<RecipeHolder<T>> recipe = original.call(check, input, level);
+        if (!AsConfig.mixinFurnace() || recipe.isEmpty()) {
+            return recipe;
         }
-        return recipe;
+        RecipeHolder<T> holder = recipe.get();
+        boolean blocked = RecipeStageGate.isBlockedForMachine(holder.id(), null, level);
+        if (AsConfig.loggingEnabled()) {
+            AnotherStages.LOGGER.info(
+                    "Furnace gate recipe={} blocked={}", holder.id().identifier(), blocked);
+        }
+        return blocked ? Optional.empty() : recipe;
     }
 }

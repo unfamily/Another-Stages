@@ -7,13 +7,14 @@ import com.google.gson.JsonObject;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.util.StageIdMatchers;
+import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.StagesLogic;
 import net.unfamily.iskalib.load.LoadJson;
 import net.unfamily.iskalib.load.LoadModCondition;
@@ -57,9 +58,7 @@ public class StageItemHandler {
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         DATAPACK_ITEM_RESTRICTIONS.clear();
         try {
-            Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                    ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
-                    : collectBootstrap();
+            Map<Identifier, JsonElement> merged = collectMerged(resourceManagerOrNull);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -79,14 +78,22 @@ public class StageItemHandler {
     }
 
     private static Map<Identifier, JsonElement> collectBootstrap() {
+        return collectMerged(null);
+    }
+
+    /** ResourceManager first, then jars + live filesystem roots (filesystem wins on same id). */
+    private static Map<Identifier, JsonElement> collectMerged(ResourceManager resourceManagerOrNull) {
         Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        if (resourceManagerOrNull != null) {
+            merged.putAll(LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES));
+        }
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", STAGE_ITEMS_SUBDIR));
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", STAGE_ITEMS_SUBDIR_LEGACY));
         merged.putAll(LoadJson.collectFromModJar("iska_lib", "iska_lib", STAGE_ITEMS_SUBDIR_LEGACY));
         merged.putAll(LoadJson.collectFromModJar("iska_utils", "iska_utils", STAGE_ITEMS_SUBDIR_LEGACY));
-        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        int external = LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
         if (external > 0) {
-            LOGGER.info("Item stage bootstrap: merged {} file(s) from configured datapack paths", external);
+            LOGGER.info("Item stage: merged {} file(s) from configured datapack paths", external);
         }
         return merged;
     }
@@ -375,30 +382,15 @@ public class StageItemHandler {
     }
     
     /**
-     * Returns true if the item matches any entry in the list (item ID, #tag, or @modid).
+     * Returns true if the item matches any entry (id, #tag, @modid, or {@code regex:}).
      */
     private static boolean itemMatchesList(Item item, List<String> list) {
-        if (list == null || list.isEmpty()) return false;
-        Identifier itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item);
-        String itemIdStr = itemId.toString();
-        String modId = itemId.getNamespace();
-        for (String entry : list) {
-            if (entry.startsWith("#")) {
-                Identifier tagId = Identifier.tryParse(entry.substring(1));
-                if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) return true;
-            } else if (entry.startsWith("@")) {
-                String entryModId = entry.substring(1).trim();
-                if (!entryModId.isEmpty() && modId.equals(entryModId)) return true;
-            } else {
-                if (itemIdStr.equals(entry)) return true;
-            }
-        }
-        return false;
+        return StageIdMatchers.matchesItem(item, list);
     }
 
     /**
      * Checks if an item is affected by the rule (matches items and is not in exclude).
-     * Supports in both items and exclude: item ID, #tag, @modid. Exclude entries exempt the item.
+     * Supports in both items and exclude: item ID, #tag, @modid, {@code regex:}.
      */
     private static boolean isItemAffected(Item item, List<String> itemsList, List<String> excludeList) {
         if (excludeList != null && !excludeList.isEmpty() && itemMatchesList(item, excludeList)) return false;

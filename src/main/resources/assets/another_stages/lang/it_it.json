@@ -22,6 +22,9 @@
   "item.another_stages.unfamiliar_item": "Oggetto Sconosciuto",
   "item.another_stages.unfamiliar_fish": "Pesce Sconosciuto",
   "message.another_stages.gui_blocked": "Questo menu è bloccato da uno stage",
+  "message.another_stages.recipe_blocked": "Questa ricetta è bloccata da uno stage",
   "config.another_stages.option.mixins.gui_slots": "Gate slot GUI",
+  "config.another_stages.section.feedback": "Feedback",
+  "config.another_stages.option.feedback.recipe_blocked_actionbar": "Action bar ricetta bloccata",
   "commands.another_stages.kubejs_stages_reloaded": "Restrizioni Another Stages da KubeJS ricaricate (soft reload di server_scripts)."
 }

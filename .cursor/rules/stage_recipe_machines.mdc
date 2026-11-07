@@ -1,0 +1,26 @@
+---
+description: Stage recipe locks on machines / process blocks (furnace-like, often no owner)
+alwaysApply: true
+---
+
+# Stage recipes on machines (no owner)
+
+## Player-interactive menus (crafting table style)
+
+Crafting table, inventory 2×2, stonecutter, smithing, recipe-book place, FastWorkbench: gate with **`RecipeStageGate.isBlockedForPlayer(player)`**.  
+The interacting player **is** the subject — **no `MachineOwners` / owner mixin** is needed or used.
+
+## Autonomous process blocks (furnace style)
+
+Furnaces, campfires, crafters, and most mod machines are **process blocks**:
+
+- Blocking must **prevent the recipe from starting** (no cook/progress), not only hide JEI.
+- **No owner is normal** for many machines (vanilla furnace has no AS owner unless claimed).
+- **Without owner: still apply stage locks.** If a stage rule matches and applies (e.g. world stage missing with `is: false`), the recipe is **blocked**. Never skip gating because `MachineOwners` is empty.
+- Library `RecipeBlockBridge` fail-closes when `ownerUuid == null` — AS machine mixins must call `StageRecipeHandler.isBlocked` (via `RecipeStageGate.isBlockedForMachine`) in that case instead of relying on the bridge alone.
+- With an owner UUID present, use the bridge as usual.
+
+Document this on Stage-Recipes (machines / offline / no-owner) when behavior changes.
+Follow `wiki_another_stages.mdc` **Maniacal explicitness**: every Kube/JSON field must say what it does — no thin mapping tables.
+
+When temporarily disabling a Gradle dependency (e.g. Fast* `localRuntime`), **comment it with `//`** — do not delete the line.

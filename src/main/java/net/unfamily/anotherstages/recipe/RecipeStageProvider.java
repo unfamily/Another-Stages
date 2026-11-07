@@ -24,6 +24,10 @@ public final class RecipeStageProvider implements RecipeBlockBridge.Provider {
             @Nullable UUID ownerUuid,
             @Nullable Level level,
             @Nullable ServerPlayer onlinePlayer) {
-        return StageRecipeHandler.isBlocked(recipeId, ownerUuid, level, onlinePlayer);
+        boolean blocked = StageRecipeHandler.isBlocked(recipeId, ownerUuid, level, onlinePlayer);
+        if (blocked) {
+            RecipeStageFeedback.maybeNotify(onlinePlayer);
+        }
+        return blocked;
     }
 }

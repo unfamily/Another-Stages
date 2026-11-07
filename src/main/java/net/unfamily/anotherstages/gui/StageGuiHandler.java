@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -16,6 +15,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.recipe.StageCondition;
+import net.unfamily.anotherstages.util.StageIdMatchers;
+import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
 import net.unfamily.iskalib.load.LoadModGate;
 import net.unfamily.iskalib.stage.StageRegistry;
@@ -44,11 +45,19 @@ public final class StageGuiHandler {
     private StageGuiHandler() {}
 
     private static Map<Identifier, JsonElement> collectBootstrap() {
+        return collectMerged(null);
+    }
+
+    /** ResourceManager first, then jar + live filesystem roots (filesystem wins on same id). */
+    private static Map<Identifier, JsonElement> collectMerged(@Nullable ResourceManager resourceManagerOrNull) {
         Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        if (resourceManagerOrNull != null) {
+            merged.putAll(LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES));
+        }
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_guis"));
-        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        int external = LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
         if (external > 0) {
-            LOGGER.info("GUI stage bootstrap: merged {} file(s) from configured datapack paths", external);
+            LOGGER.info("GUI stage: merged {} file(s) from configured datapack paths", external);
         }
         return merged;
     }
@@ -56,9 +65,7 @@ public final class StageGuiHandler {
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
         DATAPACK_RULES.clear();
         try {
-            Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                    ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
-                    : collectBootstrap();
+            Map<Identifier, JsonElement> merged = collectMerged(resourceManagerOrNull);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -220,8 +227,8 @@ public final class StageGuiHandler {
         if (!hasMenu && !hasType) {
             return false;
         }
-        boolean menuOk = !hasMenu || rule.menus.contains(className);
-        boolean typeOk = !hasType || (!typeId.isEmpty() && rule.menuTypes.contains(typeId));
+        boolean menuOk = !hasMenu || StageIdMatchers.idInList(className, rule.menus);
+        boolean typeOk = !hasType || (!typeId.isEmpty() && StageIdMatchers.idInList(typeId, rule.menuTypes));
         if (hasMenu && hasType) {
             return menuOk || typeOk;
         }
@@ -368,26 +375,6 @@ public final class StageGuiHandler {
     }
 
     private static boolean itemMatchesList(Item item, List<String> list) {
-        if (list == null || list.isEmpty() || item == null) {
-            return false;
-        }
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
-        String itemIdStr = itemId.toString();
-        String modId = itemId.getNamespace();
-        for (String entry : list) {
-            if (entry.startsWith("#")) {
-                Identifier tagId = Identifier.tryParse(entry.substring(1));
-                if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) {
-                    return true;
-                }
-            } else if (entry.startsWith("@")) {
-                if (modId.equals(entry.substring(1).trim())) {
-                    return true;
-                }
-            } else if (itemIdStr.equals(entry)) {
-                return true;
-            }
-        }
-        return false;
+        return StageIdMatchers.matchesItem(item, list);
     }
 }

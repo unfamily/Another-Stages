@@ -10,13 +10,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.util.StageIdMatchers;
+import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
 import net.unfamily.iskalib.load.LoadModGate;
 import net.unfamily.iskalib.stage.StageRegistry;
@@ -46,6 +48,8 @@ public final class StageRecipeHandler {
     private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_ID = new HashMap<>();
     private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_TYPE = new HashMap<>();
     private static final List<StageRecipeRule> IO_RULES = new ArrayList<>();
+    /** Rules with {@code regex:} in recipes/recipe_types (cannot index by exact id). */
+    private static final List<StageRecipeRule> PATTERN_RULES = new ArrayList<>();
 
     private static int RULE_REVISION;
 
@@ -54,19 +58,32 @@ public final class StageRecipeHandler {
     private static Map<Identifier, JsonElement> collectBootstrap() {
         Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_recipes"));
-        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
-        if (external > 0) {
-            LOGGER.info("Recipe stage bootstrap: merged {} file(s) from configured datapack paths", external);
-        }
+        mergeFilesystem(merged);
         return merged;
+    }
+
+    /** ResourceManager first, then jar + live filesystem roots (filesystem wins on same id). */
+    private static Map<Identifier, JsonElement> collectMerged(@Nullable ResourceManager resourceManagerOrNull) {
+        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        if (resourceManagerOrNull != null) {
+            merged.putAll(LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES));
+        }
+        merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_recipes"));
+        mergeFilesystem(merged);
+        return merged;
+    }
+
+    private static void mergeFilesystem(Map<Identifier, JsonElement> merged) {
+        int external = LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        if (external > 0) {
+            LOGGER.info("Recipe stage: merged {} file(s) from configured datapack paths", external);
+        }
     }
 
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
         DATAPACK_RULES.clear();
         try {
-            Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
-                    ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
-                    : collectBootstrap();
+            Map<Identifier, JsonElement> merged = collectMerged(resourceManagerOrNull);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -131,6 +148,7 @@ public final class StageRecipeHandler {
         BY_RECIPE_ID.clear();
         BY_RECIPE_TYPE.clear();
         IO_RULES.clear();
+        PATTERN_RULES.clear();
         for (StageRecipeRule rule : allRules()) {
             indexRule(rule);
         }
@@ -145,6 +163,9 @@ public final class StageRecipeHandler {
     private static void indexRule(StageRecipeRule rule) {
         boolean indexed = false;
         for (String id : rule.recipes) {
+            if (StageIdMatchers.hasRegexPrefix(id)) {
+                continue;
+            }
             Identifier recipeId = Identifier.tryParse(id);
             if (recipeId != null) {
                 BY_RECIPE_ID.computeIfAbsent(recipeId, k -> new ArrayList<>()).add(rule);
@@ -152,6 +173,9 @@ public final class StageRecipeHandler {
             }
         }
         for (String type : rule.recipeTypes) {
+            if (StageIdMatchers.hasRegexPrefix(type)) {
+                continue;
+            }
             Identifier typeId = Identifier.tryParse(type);
             if (typeId != null) {
                 BY_RECIPE_TYPE.computeIfAbsent(typeId, k -> new ArrayList<>()).add(rule);
@@ -160,6 +184,10 @@ public final class StageRecipeHandler {
         }
         if (!rule.outputs.isEmpty() || !rule.inputs.isEmpty()) {
             IO_RULES.add(rule);
+            indexed = true;
+        }
+        if (StageIdMatchers.listHasRegex(rule.recipes) || StageIdMatchers.listHasRegex(rule.recipeTypes)) {
+            PATTERN_RULES.add(rule);
             indexed = true;
         }
         if (!indexed && !rule.stages.isEmpty()) {
@@ -255,11 +283,10 @@ public final class StageRecipeHandler {
         List<StageRecipeRule> candidates = collectCandidates(recipeId, holder);
         String recipeIdStr = recipeId.toString();
         for (StageRecipeRule rule : candidates) {
-            if (rule.excludeRecipes.contains(recipeIdStr)) {
+            if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
                 continue;
             }
-            boolean needsIo = !rule.inputs.isEmpty() || !rule.outputs.isEmpty();
-            if (needsIo && (holder == null || !matchesIo(rule, holder, recipeIdStr))) {
+            if (!matchersPass(rule, holder, recipeIdStr)) {
                 continue;
             }
             if (ruleAppliesClient(rule)) {
@@ -344,11 +371,10 @@ public final class StageRecipeHandler {
         }
         String recipeIdStr = recipeId.toString();
         for (StageRecipeRule rule : candidates) {
-            if (rule.excludeRecipes.contains(recipeIdStr)) {
+            if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
                 continue;
             }
-            boolean needsIo = !rule.inputs.isEmpty() || !rule.outputs.isEmpty();
-            if (needsIo && (holder == null || !matchesIo(rule, holder, recipeIdStr))) {
+            if (!matchersPass(rule, holder, recipeIdStr)) {
                 continue;
             }
             if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {
@@ -356,6 +382,27 @@ public final class StageRecipeHandler {
             }
         }
         return false;
+    }
+
+    /**
+     * Filters candidates by recipe id / type / I/O matchers (AND).
+     * Without a holder, only {@code recipes} (incl. {@code regex:}) can be checked.
+     */
+    private static boolean matchersPass(StageRecipeRule rule, @Nullable RecipeHolder<?> holder, String recipeIdStr) {
+        boolean hasMatchers = !rule.recipes.isEmpty()
+                || !rule.recipeTypes.isEmpty()
+                || !rule.inputs.isEmpty()
+                || !rule.outputs.isEmpty();
+        if (!hasMatchers) {
+            return true;
+        }
+        if (holder != null) {
+            return matchesIo(rule, holder, recipeIdStr);
+        }
+        if (!rule.recipeTypes.isEmpty() || !rule.inputs.isEmpty() || !rule.outputs.isEmpty()) {
+            return false;
+        }
+        return rule.recipes.isEmpty() || StageIdMatchers.idInList(recipeIdStr, rule.recipes);
     }
 
     private static List<StageRecipeRule> collectCandidates(Identifier recipeId, @Nullable RecipeHolder<?> holder) {
@@ -372,29 +419,36 @@ public final class StageRecipeHandler {
                 out.add(io);
             }
         }
+        for (StageRecipeRule pattern : PATTERN_RULES) {
+            if (!out.contains(pattern)) {
+                out.add(pattern);
+            }
+        }
         return out;
     }
 
+    /**
+     * AND of every non-empty matcher on the rule ({@code recipes}, {@code recipe_types},
+     * {@code outputs}, {@code inputs}). Output uses {@link Recipe#display()} result slots.
+     */
     private static boolean matchesIo(StageRecipeRule rule, RecipeHolder<?> holder, String recipeIdStr) {
-        if (rule.outputs.isEmpty() && rule.inputs.isEmpty()) {
-            return true;
-        }
         Recipe<?> recipe = holder.value();
-        // Output matching requires assembling with a concrete input; skip strict output match when empty.
-        if (!rule.outputs.isEmpty()) {
-            // Prefer display/result via special recipes is unreliable without input; match by id list only when outputs set without inputs.
-            // Soft-fail: if we cannot resolve an output stack, do not match IO-only on outputs.
-            boolean matchedById = rule.recipes.contains(recipeIdStr);
+        if (!rule.recipes.isEmpty() && !StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
+            return false;
+        }
+        if (!rule.recipeTypes.isEmpty()) {
             Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
-            boolean matchedByType = typeId != null && rule.recipeTypes.contains(typeId.toString());
-            if (!matchedById && !matchedByType && rule.inputs.isEmpty()) {
+            if (typeId == null || !StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
                 return false;
             }
+        }
+        if (!rule.outputs.isEmpty() && !outputMatches(recipe, rule.outputs)) {
+            return false;
         }
         if (!rule.inputs.isEmpty()) {
             boolean any = false;
             for (Ingredient ingredient : recipe.placementInfo().ingredients()) {
-                boolean hit = ingredient.items().anyMatch(itemHolder -> itemMatchesList(itemHolder.value(), rule.inputs));
+                boolean hit = ingredient.items().anyMatch(itemHolder -> StageIdMatchers.matchesItem(itemHolder.value(), rule.inputs));
                 if (hit) {
                     any = true;
                     break;
@@ -407,25 +461,28 @@ public final class StageRecipeHandler {
         return true;
     }
 
-    private static boolean itemMatchesList(Item item, List<String> list) {
-        if (list == null || list.isEmpty()) {
-            return false;
-        }
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
-        String itemIdStr = itemId.toString();
-        String modId = itemId.getNamespace();
-        for (String entry : list) {
-            if (entry.startsWith("#")) {
-                Identifier tagId = Identifier.tryParse(entry.substring(1));
-                if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) {
-                    return true;
-                }
-            } else if (entry.startsWith("@")) {
-                if (modId.equals(entry.substring(1).trim())) {
-                    return true;
-                }
-            } else if (itemIdStr.equals(entry)) {
+    /** True if any display result item matches {@code outputs} (id / #tag / @mod / regex:). Fail-closed if none resolve. */
+    private static boolean outputMatches(Recipe<?> recipe, List<String> outputs) {
+        for (RecipeDisplay display : recipe.display()) {
+            if (slotDisplayMatches(display.result(), outputs)) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean slotDisplayMatches(SlotDisplay slot, List<String> outputs) {
+        if (slot instanceof SlotDisplay.ItemStackSlotDisplay stackDisplay) {
+            return StageIdMatchers.matchesItem(stackDisplay.stack().item().value(), outputs);
+        }
+        if (slot instanceof SlotDisplay.ItemSlotDisplay itemDisplay) {
+            return StageIdMatchers.matchesItem(itemDisplay.item().value(), outputs);
+        }
+        if (slot instanceof SlotDisplay.Composite composite) {
+            for (SlotDisplay child : composite.contents()) {
+                if (slotDisplayMatches(child, outputs)) {
+                    return true;
+                }
             }
         }
         return false;

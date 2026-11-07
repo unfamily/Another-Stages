@@ -71,6 +71,20 @@ public final class AsConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment(
+                        "Optional player feedback. Recipe locks are silent by default (GUI/JEI already show the lock).",
+                        "Enable action-bar tips mainly for machines without a useful GUI cue.")
+                .push("feedback");
+    }
+
+    public static final ModConfigSpec.BooleanValue RECIPE_BLOCKED_ACTIONBAR = BUILDER
+            .comment(
+                    "When true, show an action-bar message if a stage-blocked recipe runs while the owner has no menu open.",
+                    "Skipped when a container GUI is open. Default false.")
+            .define("recipe_blocked_actionbar", false);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -79,6 +93,10 @@ public final class AsConfig {
 
     public static boolean loggingEnabled() {
         return loaded(LOGGING_ENABLED, false);
+    }
+
+    public static boolean recipeBlockedActionbar() {
+        return loaded(RECIPE_BLOCKED_ACTIONBAR, false);
     }
 
     public static boolean mixinCrafting() {

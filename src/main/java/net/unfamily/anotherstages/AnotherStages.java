@@ -26,12 +26,14 @@ public class AnotherStages {
         AsAttachmentTypes.register(modEventBus);
         modEventBus.addListener(AsNetworking::register);
         AsNetworking.installHooks();
-        // Install order builds reload chain: Library <- items <- recipes <- blocks <- guis <- kube soft-reload (outer)
+        // Install order: Library <- items <- recipes <- blocks <- guis <- kube soft <- utils reload bridge
         StageItemBootstrap.install();
         StageRecipeBootstrap.install();
         StageBlockBootstrap.install();
         StageGuiBootstrap.install();
         net.unfamily.anotherstages.kubejs.KubejsStageSoftReload.install();
+        net.unfamily.anotherstages.datapack.AsUtilsReloadBridge.install();
+        modEventBus.addListener(net.unfamily.anotherstages.datapack.AsUtilsReloadBridge::onCommonSetup);
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             net.unfamily.anotherstages.client.StageItemClientSetup.register(modEventBus);
         }

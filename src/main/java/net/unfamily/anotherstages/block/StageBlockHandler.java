@@ -8,13 +8,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.anotherstages.recipe.StageCondition;
+import net.unfamily.anotherstages.util.StageIdMatchers;
+import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
 import net.unfamily.iskalib.load.LoadModGate;
 import net.unfamily.iskalib.stage.StageRegistry;
@@ -44,11 +45,19 @@ public final class StageBlockHandler {
     private StageBlockHandler() {}
 
     private static Map<Identifier, JsonElement> collectBootstrap() {
+        return collectMerged(null);
+    }
+
+    /** ResourceManager first, then jar + live filesystem roots (filesystem wins on same id). */
+    private static Map<Identifier, JsonElement> collectMerged(@Nullable ResourceManager rm) {
         Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        if (rm != null) {
+            merged.putAll(LoadJson.collectMergedJsonForTypes(rm, ACCEPTED));
+        }
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_blocks"));
-        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED);
+        int external = LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED);
         if (external > 0) {
-            LOGGER.info("Block stage bootstrap: merged {} file(s) from configured datapack paths", external);
+            LOGGER.info("Block stage: merged {} file(s) from configured datapack paths", external);
         }
         return merged;
     }
@@ -56,9 +65,7 @@ public final class StageBlockHandler {
     public static void loadAll(@Nullable ResourceManager rm) {
         DATAPACK_RULES.clear();
         try {
-            Map<Identifier, JsonElement> merged = rm != null
-                    ? LoadJson.collectMergedJsonForTypes(rm, ACCEPTED)
-                    : collectBootstrap();
+            Map<Identifier, JsonElement> merged = collectMerged(rm);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -123,7 +130,7 @@ public final class StageBlockHandler {
         BY_BLOCK.clear();
         for (StageBlockRule rule : allRules()) {
             for (String id : rule.blocks) {
-                if (id.startsWith("#") || id.startsWith("@")) {
+                if (id.startsWith("#") || id.startsWith("@") || StageIdMatchers.hasRegexPrefix(id)) {
                     continue;
                 }
                 Identifier blockId = Identifier.tryParse(id);
@@ -217,27 +224,7 @@ public final class StageBlockHandler {
     }
 
     private static boolean matchesBlock(Block block, List<String> list) {
-        if (list == null || list.isEmpty()) {
-            return false;
-        }
-        Identifier id = BuiltInRegistries.BLOCK.getKey(block);
-        String idStr = id.toString();
-        String mod = id.getNamespace();
-        for (String entry : list) {
-            if (entry.startsWith("#")) {
-                Identifier tag = Identifier.tryParse(entry.substring(1));
-                if (tag != null && block.builtInRegistryHolder().is(BlockTags.create(tag))) {
-                    return true;
-                }
-            } else if (entry.startsWith("@")) {
-                if (mod.equals(entry.substring(1).trim())) {
-                    return true;
-                }
-            } else if (idStr.equals(entry)) {
-                return true;
-            }
-        }
-        return false;
+        return StageIdMatchers.matchesBlock(block, list);
     }
 
     private static boolean stagesApply(StageBlockRule rule, @Nullable Player player, @Nullable Level level) {

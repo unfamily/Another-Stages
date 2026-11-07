@@ -25,10 +25,10 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
             return isLoaded("fastbench");
         }
         if (lower.contains("fastfurnace") && lower.contains("compat")) {
-            // Dedicated FastFurnace gate (MixinAbstractFurnaceBlockEntity.getRecipe)
+            // Gate FastFurnace's merged getRecipe(ServerLevel) on AbstractFurnaceBlockEntity
             return isLoaded("fastfurnace");
         }
-        // Vanilla furnace CachedCheck redirect fights FastFurnace's own redirect — skip when FF present
+        // Vanilla CachedCheck redirect fights FastFurnace's redirect on the same call — skip when FF present
         if (lower.contains("abstractfurnaceblockentitymixin")) {
             return !isLoaded("fastfurnace");
         }
