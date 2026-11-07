@@ -34,7 +34,8 @@ public final class StageBlockBootstrap {
 
     public static void reload(@Nullable ResourceManager rm) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        ResourceManager manager = rm != null ? rm : (server != null ? server.getResourceManager() : null);
+        ResourceManager pending = StageReloadHooks.currentResourceManagerOrNull();
+        ResourceManager manager = rm != null ? rm : (pending != null ? pending : (server != null ? server.getResourceManager() : null));
         StageBlockHandler.loadAll(manager);
     }
 }

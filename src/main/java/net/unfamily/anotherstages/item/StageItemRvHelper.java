@@ -30,18 +30,18 @@ public final class StageItemRvHelper {
         HIDE
     }
 
-    /** Overlay badge: 24×24 lock (larger canvas would shrink the icon too much). */
+    /** Overlay badge: 24×24 lock under {@code textures/stage_locking/}. */
     public static final Identifier LOCK_OVERLAY =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked.png");
     public static final int LOCK_OVERLAY_SIZE = 24;
     public static final Identifier HARDCORE_TEXTURE =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked_hardcore.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked_hardcore.png");
     /** Overlay badge: 32×32 so the fish art stays readable vs the 24×24 lock. */
     public static final Identifier FISH_OVERLAY =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish.png");
     public static final int FISH_OVERLAY_SIZE = 32;
     public static final Identifier FISH_HARDCORE =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish_hardcore.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish_hardcore.png");
 
     /** Client item-model ids ({@code assets/.../items/*.json}) used to replace the real item when hardcore. */
     public static final Identifier HARDCORE_ITEM_MODEL =

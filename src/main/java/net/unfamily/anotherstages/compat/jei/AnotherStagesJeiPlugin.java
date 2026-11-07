@@ -53,11 +53,22 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
 
     @Override
     public void registerAdvanced(IAdvancedRegistration registration) {
+        Set<Identifier> seen = new HashSet<>();
+        registration.getJeiHelpers().getAllRecipeTypes().forEach(type -> {
+            if (seen.add(type.getUid())) {
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                IRecipeType rawType = type;
+                registration.addRecipeCategoryDecorator(rawType, StageRecipeLockDecorator.INSTANCE);
+            }
+        });
+        // Fallback for vanilla holder types not yet exposed as JEI categories
         for (RecipeType<?> vanillaType : BuiltInRegistries.RECIPE_TYPE) {
             IRecipeHolderType<?> holderType = IRecipeHolderType.create(vanillaType);
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            IRecipeType rawType = holderType;
-            registration.addRecipeCategoryDecorator(rawType, StageRecipeLockDecorator.INSTANCE);
+            if (seen.add(holderType.getUid())) {
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                IRecipeType rawType = holderType;
+                registration.addRecipeCategoryDecorator(rawType, StageRecipeLockDecorator.INSTANCE);
+            }
         }
     }
 
@@ -99,7 +110,7 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
 
         String fingerprint = ClientStageCache.fingerprint()
                 + "|items=" + (StageItemHandler.hasLoadedRestrictions() ? "1" : "0")
-                + "|recipes=" + (StageRecipeHandler.hasLoadedRules() ? "1" : "0");
+                + "|recipes=" + StageRecipeHandler.clientRuleRevision();
         if (fingerprint.equals(lastFingerprint)) {
             return;
         }
@@ -167,15 +178,14 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
                     .includeHidden()
                     .get()
                     .forEach(recipe -> {
-                        Identifier id = StageRecipeRvHelper.idOf(recipe);
-                        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe);
+                        Identifier id = StageRecipeRvHelper.idOf(recipe, category);
+                        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, id);
                         if (StageRecipeRvHelper.modeFor(id, holder) == StageRecipeRvHelper.Mode.HIDE) {
                             shouldHide.computeIfAbsent(type, t -> new HashSet<>()).add(recipe);
                         }
                     });
         }
 
-        // Restore recipes no longer hidden
         for (Map.Entry<IRecipeType<?>, Set<Object>> entry : currentlyHiddenRecipes.entrySet()) {
             IRecipeType type = entry.getKey();
             Set<Object> wasHidden = entry.getValue();
@@ -191,7 +201,6 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
             }
         }
 
-        // Hide newly gated recipes
         for (Map.Entry<IRecipeType<?>, Set<Object>> entry : shouldHide.entrySet()) {
             IRecipeType type = entry.getKey();
             Set<Object> nowHidden = entry.getValue();

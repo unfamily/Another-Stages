@@ -16,14 +16,13 @@ import net.unfamily.anotherstages.recipe.StageRecipeRule;
 import java.util.List;
 
 /**
- * Red wash over the recipe layout plus a hardcore-style lock badge in a configurable corner.
+ * Red wash over the recipe layout plus a lock badge in a configurable corner.
  *
  * @param <T> JEI recipe type (typically {@link RecipeHolder})
  */
 public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorator<T> {
     public static final StageRecipeLockDecorator<Object> INSTANCE = new StageRecipeLockDecorator<>();
 
-    /** On-screen badge size (texture is 24 lock / 32 fish, scaled into this box). */
     private static final int BADGE_SIZE = 16;
     private static final int PAD = 1;
 
@@ -37,8 +36,8 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
-        Identifier recipeId = StageRecipeRvHelper.idOf(recipe);
-        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe);
+        Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
+        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
         if (StageRecipeRvHelper.modeFor(recipeId, holder) != StageRecipeRvHelper.Mode.OVERLAY) {
             return;
         }
@@ -51,7 +50,9 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
         RenderPipeline pipeline = RenderPipelines.GUI_TEXTURED;
         Identifier texture = StageRecipeRvHelper.lockTexture();
         int texSize = StageRecipeRvHelper.lockTextureSize();
-        guiGraphics.blit(pipeline, texture, box[0], box[1], 0f, 0f, BADGE_SIZE, BADGE_SIZE, texSize, texSize);
+        guiGraphics.blit(
+                pipeline, texture, box[0], box[1], 0f, 0f,
+                BADGE_SIZE, BADGE_SIZE, texSize, texSize, texSize, texSize);
     }
 
     @Override
@@ -62,8 +63,8 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             IRecipeSlotsView recipeSlotsView,
             double mouseX,
             double mouseY) {
-        Identifier recipeId = StageRecipeRvHelper.idOf(recipe);
-        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe);
+        Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
+        RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
         List<StageRecipeRule> overlayRules = StageRecipeRvHelper.activeOverlayRules(recipeId, holder);
         if (overlayRules.isEmpty()) {
             return;

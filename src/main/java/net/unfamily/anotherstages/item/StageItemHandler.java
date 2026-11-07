@@ -84,6 +84,10 @@ public class StageItemHandler {
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", STAGE_ITEMS_SUBDIR_LEGACY));
         merged.putAll(LoadJson.collectFromModJar("iska_lib", "iska_lib", STAGE_ITEMS_SUBDIR_LEGACY));
         merged.putAll(LoadJson.collectFromModJar("iska_utils", "iska_utils", STAGE_ITEMS_SUBDIR_LEGACY));
+        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        if (external > 0) {
+            LOGGER.info("Item stage bootstrap: merged {} file(s) from configured datapack paths", external);
+        }
         return merged;
     }
 

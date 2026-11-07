@@ -43,12 +43,22 @@ public final class StageGuiHandler {
 
     private StageGuiHandler() {}
 
+    private static Map<Identifier, JsonElement> collectBootstrap() {
+        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_guis"));
+        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        if (external > 0) {
+            LOGGER.info("GUI stage bootstrap: merged {} file(s) from configured datapack paths", external);
+        }
+        return merged;
+    }
+
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
         DATAPACK_RULES.clear();
         try {
             Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
                     ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
-                    : LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_guis");
+                    : collectBootstrap();
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;

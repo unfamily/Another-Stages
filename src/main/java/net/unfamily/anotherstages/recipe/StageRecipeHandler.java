@@ -47,14 +47,26 @@ public final class StageRecipeHandler {
     private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_TYPE = new HashMap<>();
     private static final List<StageRecipeRule> IO_RULES = new ArrayList<>();
 
+    private static int RULE_REVISION;
+
     private StageRecipeHandler() {}
+
+    private static Map<Identifier, JsonElement> collectBootstrap() {
+        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_recipes"));
+        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
+        if (external > 0) {
+            LOGGER.info("Recipe stage bootstrap: merged {} file(s) from configured datapack paths", external);
+        }
+        return merged;
+    }
 
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
         DATAPACK_RULES.clear();
         try {
             Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
                     ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
-                    : LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_recipes");
+                    : collectBootstrap();
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -122,6 +134,12 @@ public final class StageRecipeHandler {
         for (StageRecipeRule rule : allRules()) {
             indexRule(rule);
         }
+        RULE_REVISION++;
+    }
+
+    /** Bumps when datapack/script recipe indexes rebuild (JEI fingerprint). */
+    public static int clientRuleRevision() {
+        return RULE_REVISION;
     }
 
     private static void indexRule(StageRecipeRule rule) {
@@ -240,7 +258,8 @@ public final class StageRecipeHandler {
             if (rule.excludeRecipes.contains(recipeIdStr)) {
                 continue;
             }
-            if (holder != null && !matchesIo(rule, holder, recipeIdStr)) {
+            boolean needsIo = !rule.inputs.isEmpty() || !rule.outputs.isEmpty();
+            if (needsIo && (holder == null || !matchesIo(rule, holder, recipeIdStr))) {
                 continue;
             }
             if (ruleAppliesClient(rule)) {
@@ -328,7 +347,8 @@ public final class StageRecipeHandler {
             if (rule.excludeRecipes.contains(recipeIdStr)) {
                 continue;
             }
-            if (holder != null && !matchesIo(rule, holder, recipeIdStr)) {
+            boolean needsIo = !rule.inputs.isEmpty() || !rule.outputs.isEmpty();
+            if (needsIo && (holder == null || !matchesIo(rule, holder, recipeIdStr))) {
                 continue;
             }
             if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {

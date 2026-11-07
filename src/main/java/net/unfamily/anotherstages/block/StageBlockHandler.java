@@ -43,12 +43,22 @@ public final class StageBlockHandler {
 
     private StageBlockHandler() {}
 
+    private static Map<Identifier, JsonElement> collectBootstrap() {
+        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+        merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_blocks"));
+        int external = net.unfamily.iskalib.load.LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED);
+        if (external > 0) {
+            LOGGER.info("Block stage bootstrap: merged {} file(s) from configured datapack paths", external);
+        }
+        return merged;
+    }
+
     public static void loadAll(@Nullable ResourceManager rm) {
         DATAPACK_RULES.clear();
         try {
             Map<Identifier, JsonElement> merged = rm != null
                     ? LoadJson.collectMergedJsonForTypes(rm, ACCEPTED)
-                    : LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_blocks");
+                    : collectBootstrap();
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;

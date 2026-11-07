@@ -1,28 +1,51 @@
 ---
-description: Keep Another Stages wiki current; Utils stage wiki is redirect-only
+description: Another Stages wiki rules — canonical docs, history, under construction, load paths
 alwaysApply: true
 ---
 
 # Wiki: Another Stages is canonical
 
-When stage item / recipe / block / Kube / datapack behavior changes in this mod, **update the Another Stages wiki in the same task** (do not leave docs stale).
+When stage item / recipe / block / GUI / Kube / datapack behavior changes in this mod, **update the Another Stages wiki in the same task** (do not leave docs stale).
 
 ## Where
 
 - Canonical docs: `/home/unfamily/git_wiki/Another-Stages.wiki/`  
-  (Stage-Items, Stage-Recipes, Stage-Blocks, Home, etc.)
-- Utils wiki (`Iskandert_Utilities.wiki` Stage-* pages): **redirect / short “Moved” notice only** — point to the Another Stages wiki. Do not evolve full stage docs there.
+  (Stage-Items, Stage-Recipes, Stage-Blocks, Stage-Guis, Home, etc.)
+- Utils wiki (`Iskandert_Utilities.wiki` Stage-* gating pages): **redirect / short “Moved” notice only** — point to the Another Stages wiki. Do not evolve full stage gating docs there.
+- **Stage Actions** stay on Utils/Library — do **not** rewrite them as AS docs.
+- Historical Utils Stage pages (link from Home / Moved notices), all of them:
+  - https://github.com/unfamily/iskandert_utilities/wiki/Stage-Items
+  - https://github.com/unfamily/iskandert_utilities/wiki/Stage-Actions
+  - and any other `Stage-*` page under https://github.com/unfamily/iskandert_utilities/wiki
 - Do not recreate long stage tutorials under Utils or Library wikis.
 
-## Inheritance
+## Home banner and versions
 
-Another Stages owns gating and **accepted the pre-AS JSON surface** (legacy `iska_utils` / `iska_lib` types and load paths still work). Document new fields and Kube managers on the AS wiki; mention legacy compatibility briefly where useful.
+- Keep **Under construction** at the top of `Home.md` while the AS wiki is incomplete.
+- Support table: **26.1.2 = Supported**; **1.21.1 = Not yet (coming)** until that port exists. Do not mark 1.21.1 as Supported prematurely.
 
-## What to update
+## Inheritance and history (do not erase)
 
-- New/changed JSON fields, defaults, and removed aliases
-- Kube verbs (`AnotherStages.items` / `.recipes` / `.blocks`)
-- Client/JEI presentation (`recipe_viewer`, names, tooltips)
+Another Stages owns **gating** and **accepted the pre-AS JSON surface** (legacy `iska_utils` / `iska_lib` types still work).
+
+1. **Keep version history** from the old Utils/Library wiki. If a field/feature says it arrived in Utilities `3.5.0.0.0+` or Library `1.12.0.0.0+`, **leave that note**.
+2. **Add** the move line: owned by Another Stages when installed; legacy `type` still loads.
+3. Do **not** rewrite “Since” tables as if everything started at AS `26.1.2` only.
+4. Document new AS-only fields and Kube managers on the AS wiki; mention legacy compatibility briefly where useful.
+
+## Datapack load path
+
+- JSON loads from **any** `data/<namespace>/load/**/*.json` whose root `"type"` matches (`another_stages:stage_*` or legacy item types).
+- Subfolders such as `another_stages_items` / `iska_utils_stage_items` are **recommended conventions only**, never a hard requirement in docs or code.
+- Prefer bundling many rules in one file (`restrictions` array). See also `json_bundling.mdc`.
+- External roots follow Library `bootstrap.datapack_paths` (KubeJS / Open Loader / Global Packs / `datapacks`), including `.zip` packs via `LoadFilesystemBootstrap`.
+
+## What to update when code changes
+
+- New/changed JSON fields, defaults, removed aliases — with history notes above
+- Kube verbs (`AnotherStages.items` / `.recipes` / `.blocks` / `.guis`)
+- Client/JEI presentation (`recipe_viewer`, names, tooltips, textures under `textures/stage_locking/`)
 - Reload commands and ownership notes (AS vs Library skip)
+- Texture / asset path changes
 
 Wiki prose may be Italian or English as existing pages; **code/comments stay English**.

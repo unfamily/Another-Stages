@@ -1,6 +1,5 @@
 package net.unfamily.anotherstages.item;
 
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -8,6 +7,7 @@ import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.iskalib.stage.StageCatalog;
 import net.unfamily.iskalib.stage.StageReloadHooks;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wires item stage ownership into Library catalog/reload without duplicating StageRegistry.
@@ -28,7 +28,7 @@ public final class StageItemBootstrap {
         StageReloadHooks.Listener previous = StageReloadHooks.getListener();
         StageReloadHooks.setListener(source -> {
             int result = previous != null ? previous.reloadStageBlock(source) : 1;
-            reloadItems(source);
+            reload(null);
             return result;
         });
 
@@ -38,10 +38,11 @@ public final class StageItemBootstrap {
         }
     }
 
-    private static void reloadItems(CommandSourceStack source) {
+    public static void reload(@Nullable ResourceManager rm) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        ResourceManager rm = server != null ? server.getResourceManager() : null;
-        StageItemHandler.loadAll(rm);
+        ResourceManager pending = StageReloadHooks.currentResourceManagerOrNull();
+        ResourceManager manager = rm != null ? rm : (pending != null ? pending : (server != null ? server.getResourceManager() : null));
+        StageItemHandler.loadAll(manager);
         if (AsConfig.loggingEnabled()) {
             AnotherStages.LOGGER.info("Reloaded Another Stages item restrictions");
         }

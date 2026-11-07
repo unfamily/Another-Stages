@@ -1,5 +1,6 @@
 package net.unfamily.anotherstages.recipe;
 
+import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -27,13 +28,13 @@ public final class StageRecipeRvHelper {
         BOTTOM_RIGHT
     }
 
-    /** Same art as item overlay: 24×24 lock / 32×32 fish. */
+    /** Dedicated 16×16 JEI badges under {@code textures/stage_locking/}. */
     public static final Identifier RECIPE_LOCKED =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked.png");
     public static final Identifier RECIPE_LOCKED_FISH =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish.png");
-    public static final int RECIPE_LOCKED_SIZE = 24;
-    public static final int RECIPE_LOCKED_FISH_SIZE = 32;
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked_fish.png");
+    public static final int RECIPE_LOCKED_SIZE = 16;
+    public static final int RECIPE_LOCKED_FISH_SIZE = 16;
 
     /** Slight reddish wash over the whole recipe layout. */
     public static final int OVERLAY_TINT = 0x44AA3030;
@@ -67,7 +68,7 @@ public final class StageRecipeRvHelper {
         return StageAprilFools.isAprilFools() ? RECIPE_LOCKED_FISH : RECIPE_LOCKED;
     }
 
-    /** Native pixel size of {@link #lockTexture()} (24 lock / 32 fish). */
+    /** Native pixel size of {@link #lockTexture()} (16×16 lock / fish badges). */
     public static int lockTextureSize() {
         return StageAprilFools.isAprilFools() ? RECIPE_LOCKED_FISH_SIZE : RECIPE_LOCKED_SIZE;
     }
@@ -104,7 +105,7 @@ public final class StageRecipeRvHelper {
     }
 
     /**
-     * Badge box [x, y] for a 16×16 icon inside the category layout.
+     * Badge box [x, y] for a lock icon inside the category layout.
      */
     public static int[] lockBox(int width, int height, int lockSize, int pad, Corner corner) {
         int w = Math.max(lockSize, width);
@@ -150,17 +151,36 @@ public final class StageRecipeRvHelper {
 
     @Nullable
     public static Identifier idOf(Object recipe) {
+        return idOf(recipe, null);
+    }
+
+    @Nullable
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Identifier idOf(Object recipe, @Nullable IRecipeCategory<?> category) {
         if (recipe instanceof RecipeHolder<?> holder) {
             return holder.id().identifier();
+        }
+        if (category != null) {
+            try {
+                return ((IRecipeCategory) category).getIdentifier(recipe);
+            } catch (RuntimeException ignored) {
+                return null;
+            }
         }
         return null;
     }
 
     @Nullable
     public static RecipeHolder<?> asHolder(Object recipe) {
+        return asHolder(recipe, null);
+    }
+
+    @Nullable
+    public static RecipeHolder<?> asHolder(Object recipe, @Nullable Identifier recipeId) {
         if (recipe instanceof RecipeHolder<?> holder) {
             return holder;
         }
+        // 26.1 client has no full RecipeManager byKey; JEI wrappers rely on idOf + recipes[] matchers.
         return null;
     }
 }
