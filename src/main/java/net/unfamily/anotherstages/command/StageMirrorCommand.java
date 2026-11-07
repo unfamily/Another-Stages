@@ -1,11 +1,18 @@
 package net.unfamily.anotherstages.command;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionLevel;
 import net.neoforged.bus.api.EventPriority;
@@ -14,12 +21,16 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.anotherstages.AnotherStages;
 
+import java.net.URI;
+
 /**
- * {@code /another_stages}: owns {@code call_action}; other stage CRUD subcommands mirror Library.
+ * {@code /another_stages}: owns {@code call_action} and {@code wiki}; other stage CRUD subcommands mirror Library.
  * Registered at {@link EventPriority#LOWEST} so {@code /iska_lib_stage} already exists.
  */
 @EventBusSubscriber(modid = AnotherStages.MOD_ID)
 public final class StageMirrorCommand {
+    private static final String WIKI_URL = "https://www.anothermoddevwiki.eu/another-stages";
+
     private StageMirrorCommand() {}
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -27,13 +38,14 @@ public final class StageMirrorCommand {
         register(event.getDispatcher());
     }
 
-    public static void register(com.mojang.brigadier.CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("another_stages")
                 .requires(src -> src.permissions().hasPermission(
                         new Permission.HasCommandLevel(PermissionLevel.byId(2))));
 
         // Migrated off Library: only Another Stages registers call_action.
         builder.then(CallActionCommand.subtree());
+        builder.then(Commands.literal("wiki").executes(StageMirrorCommand::executeWiki));
 
         CommandNode<CommandSourceStack> libraryRoot = dispatcher.getRoot().getChild("iska_lib_stage");
         if (libraryRoot != null) {
@@ -53,6 +65,20 @@ public final class StageMirrorCommand {
         }
 
         dispatcher.register(builder);
+    }
+
+    private static int executeWiki(CommandContext<CommandSourceStack> context) {
+        MutableComponent link = Component.literal(WIKI_URL)
+                .withStyle(Style.EMPTY
+                        .withColor(ChatFormatting.AQUA)
+                        .withUnderlined(true)
+                        .withClickEvent(new ClickEvent.OpenUrl(URI.create(WIKI_URL)))
+                        .withHoverEvent(new HoverEvent.ShowText(
+                                Component.translatable("commands.another_stages.wiki.hover"))));
+        context.getSource().sendSuccess(
+                () -> Component.translatable("commands.another_stages.wiki", link),
+                false);
+        return 1;
     }
 
     /**

@@ -26,5 +26,7 @@
   "config.another_stages.option.mixins.gui_slots": "GUI slot gating",
   "config.another_stages.section.feedback": "Feedback",
   "config.another_stages.option.feedback.recipe_blocked_actionbar": "Recipe blocked action bar",
-  "commands.another_stages.kubejs_stages_reloaded": "KubeJS Another Stages restrictions reloaded (server_scripts soft reload)."
+  "commands.another_stages.kubejs_stages_reloaded": "KubeJS Another Stages restrictions reloaded (server_scripts soft reload).",
+  "commands.another_stages.wiki": "Developers wiki: %s",
+  "commands.another_stages.wiki.hover": "Open the Another Stages wiki"
 }
