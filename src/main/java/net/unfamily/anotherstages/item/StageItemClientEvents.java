@@ -43,14 +43,20 @@ public final class StageItemClientEvents {
         }
 
         for (StageItemHandler.StageItemRule rule : rules) {
-            if (rule.tooltips == null || rule.tooltips.isEmpty()) {
-                continue;
-            }
-            for (String tip : rule.tooltips) {
-                if (tip == null || tip.isBlank()) {
-                    continue;
+            if (rule.tooltips != null) {
+                for (String tip : rule.tooltips) {
+                    if (tip == null || tip.isBlank()) {
+                        continue;
+                    }
+                    event.getToolTip().add(resolveTooltip(tip.trim()));
                 }
-                event.getToolTip().add(resolveTooltip(tip.trim()));
+            }
+            if (rule.componentTooltips != null) {
+                for (Component tip : rule.componentTooltips) {
+                    if (tip != null) {
+                        event.getToolTip().add(tip);
+                    }
+                }
             }
         }
 

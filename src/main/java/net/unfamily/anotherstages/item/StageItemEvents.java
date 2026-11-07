@@ -250,7 +250,6 @@ public final class StageItemEvents {
                 "```json\n" +
                 "{\n" +
                 "  \"type\": \"iska_utils:stage_item\",\n" +
-                "  \"overwritable\": true,\n" +
                 "  \"restrictions\": [\n" +
                 "    {\n" +
                 "      \"stages_logic\": \"AND\",\n" +
@@ -284,7 +283,6 @@ public final class StageItemEvents {
                 "```json\n" +
                 "{\n" +
                 "  \"type\": \"iska_utils:stage_item\",\n" +
-                "  \"overwritable\": true,\n" +
                 "  \"restrictions\": [\n" +
                 "    {\n" +
                 "      \"stages_logic\": \"AND\",\n" +
@@ -303,7 +301,6 @@ public final class StageItemEvents {
                 "```json\n" +
                 "{\n" +
                 "  \"type\": \"iska_utils:stage_item\",\n" +
-                "  \"overwritable\": true,\n" +
                 "  \"restrictions\": [\n" +
                 "    {\n" +
                 "      \"stages_logic\": \"DEF_OR\",\n" +

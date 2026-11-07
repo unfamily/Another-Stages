@@ -37,14 +37,14 @@ public final class StageBlockHandler {
     private static final Set<String> ACCEPTED = Set.of(TYPE);
     private static final Logger LOGGER = LoggerFactory.getLogger(StageBlockHandler.class);
 
-    private static final List<StageBlockRule> RULES = new ArrayList<>();
+    private static final List<StageBlockRule> DATAPACK_RULES = new ArrayList<>();
+    private static final Map<String, StageBlockRule> SCRIPT_RULES = new HashMap<>();
     private static final Map<Identifier, List<StageBlockRule>> BY_BLOCK = new HashMap<>();
 
     private StageBlockHandler() {}
 
     public static void loadAll(@Nullable ResourceManager rm) {
-        RULES.clear();
-        BY_BLOCK.clear();
+        DATAPACK_RULES.clear();
         try {
             Map<Identifier, JsonElement> merged = rm != null
                     ? LoadJson.collectMergedJsonForTypes(rm, ACCEPTED)
@@ -68,22 +68,59 @@ public final class StageBlockHandler {
                     if (!LoadModGate.shouldIncludeAtLoad(ruleObj, LOGGER, "stage_block_rule")) {
                         continue;
                     }
-                    StageBlockRule rule = parse(ruleObj);
-                    RULES.add(rule);
-                    for (String id : rule.blocks) {
-                        if (id.startsWith("#") || id.startsWith("@")) {
-                            continue;
-                        }
-                        Identifier blockId = Identifier.tryParse(id);
-                        if (blockId != null) {
-                            BY_BLOCK.computeIfAbsent(blockId, k -> new ArrayList<>()).add(rule);
-                        }
-                    }
+                    DATAPACK_RULES.add(parse(ruleObj));
                 }
             }
-            LOGGER.info("Loaded {} stage block rules", RULES.size());
+            rebuildIndexes();
+            LOGGER.info("Loaded {} stage block rules ({} script)", ruleCount(), SCRIPT_RULES.size());
         } catch (Exception ex) {
             LOGGER.error("Error loading stage block rules: {}", ex.getMessage());
+        }
+    }
+
+    public static void clearScriptRules() {
+        SCRIPT_RULES.clear();
+        rebuildIndexes();
+    }
+
+    public static void putScriptRule(String id, StageBlockRule rule) {
+        if (id == null || id.isBlank() || rule == null) {
+            return;
+        }
+        SCRIPT_RULES.put(id, rule);
+        rebuildIndexes();
+    }
+
+    public static boolean hasRuleId(String id) {
+        return SCRIPT_RULES.containsKey(id);
+    }
+
+    private static int ruleCount() {
+        return DATAPACK_RULES.size() + SCRIPT_RULES.size();
+    }
+
+    private static Iterable<StageBlockRule> allRules() {
+        if (SCRIPT_RULES.isEmpty()) {
+            return DATAPACK_RULES;
+        }
+        ArrayList<StageBlockRule> all = new ArrayList<>(ruleCount());
+        all.addAll(DATAPACK_RULES);
+        all.addAll(SCRIPT_RULES.values());
+        return all;
+    }
+
+    private static void rebuildIndexes() {
+        BY_BLOCK.clear();
+        for (StageBlockRule rule : allRules()) {
+            for (String id : rule.blocks) {
+                if (id.startsWith("#") || id.startsWith("@")) {
+                    continue;
+                }
+                Identifier blockId = Identifier.tryParse(id);
+                if (blockId != null) {
+                    BY_BLOCK.computeIfAbsent(blockId, k -> new ArrayList<>()).add(rule);
+                }
+            }
         }
     }
 
@@ -133,7 +170,7 @@ public final class StageBlockHandler {
 
     public static Set<String> collectReferencedStages() {
         Set<String> stages = new HashSet<>();
-        for (StageBlockRule rule : RULES) {
+        for (StageBlockRule rule : allRules()) {
             for (StageCondition c : rule.stages) {
                 if (c.stage != null && !c.stage.isBlank()) {
                     stages.add(c.stage.trim());
@@ -145,12 +182,12 @@ public final class StageBlockHandler {
 
     @Nullable
     public static StageBlockRule findActiveRule(BlockState state, @Nullable Player player, @Nullable Level level) {
-        if (RULES.isEmpty() || state == null) {
+        if (ruleCount() == 0 || state == null) {
             return null;
         }
         Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         List<StageBlockRule> candidates = new ArrayList<>(BY_BLOCK.getOrDefault(id, List.of()));
-        for (StageBlockRule rule : RULES) {
+        for (StageBlockRule rule : allRules()) {
             if (candidates.contains(rule)) {
                 continue;
             }

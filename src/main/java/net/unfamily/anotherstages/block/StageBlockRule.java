@@ -17,4 +17,6 @@ public final class StageBlockRule {
     public String interactMessage = "";
     public List<String> tooltips = new ArrayList<>();
     public boolean hideDefaultTooltips = false;
+    /** KubeJS Component tooltips (in addition to string tooltips). */
+    public List<net.minecraft.network.chat.Component> componentTooltips = new ArrayList<>();
 }

@@ -45,7 +45,9 @@ public class StageItemHandler {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     
     // Map of item restrictions loaded from JSON files
-    private static final Map<String, StageItemRestriction> ITEM_RESTRICTIONS = new HashMap<>();
+    private static final Map<String, StageItemRestriction> DATAPACK_ITEM_RESTRICTIONS = new HashMap<>();
+    /** Restrictions registered from KubeJS scripts (cleared on script reload only). */
+    private static final Map<String, StageItemRestriction> SCRIPT_ITEM_RESTRICTIONS = new HashMap<>();
 
     /**
      * Loads item restrictions from any {@code data/<namespace>/load/…} file whose
@@ -53,7 +55,7 @@ public class StageItemHandler {
      * Recommended folder: {@code load/another_stages_items/} (legacy {@code load/iska_utils_stage_items/} still works).
      */
     public static void loadAll(ResourceManager resourceManagerOrNull) {
-        ITEM_RESTRICTIONS.clear();
+        DATAPACK_ITEM_RESTRICTIONS.clear();
         try {
             Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
                     ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
@@ -66,11 +68,11 @@ public class StageItemHandler {
                 if (json.has("type") && ACCEPTED_TYPES.contains(json.get("type").getAsString())) {
                     StageItemRestriction restriction = parseRestriction(json);
                     String id = LoadJson.definitionIdFromLocation(e.getKey());
-                    ITEM_RESTRICTIONS.put(id, restriction);
+                    DATAPACK_ITEM_RESTRICTIONS.put(id, restriction);
                     LOGGER.info("Loaded item restriction: {}", id);
                 }
             }
-            LOGGER.info("Loaded {} item restrictions", ITEM_RESTRICTIONS.size());
+            LOGGER.info("Loaded {} item restrictions", DATAPACK_ITEM_RESTRICTIONS.size());
         } catch (Exception e) {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
@@ -90,7 +92,7 @@ public class StageItemHandler {
      */
     public static java.util.Set<String> collectReferencedStages() {
         java.util.LinkedHashSet<String> stages = new java.util.LinkedHashSet<>();
-        for (StageItemRestriction restriction : ITEM_RESTRICTIONS.values()) {
+        for (StageItemRestriction restriction : allRestrictions()) {
             if (restriction == null || restriction.restrictions == null) {
                 continue;
             }
@@ -112,7 +114,7 @@ public class StageItemHandler {
      * Loads all item restrictions from JSON files
      */
     public static void loadItemRestrictions(Path configPath) {
-        ITEM_RESTRICTIONS.clear();
+        DATAPACK_ITEM_RESTRICTIONS.clear();
         
         try {
             Files.list(configPath)
@@ -123,7 +125,7 @@ public class StageItemHandler {
                         if (json.has("type") && ACCEPTED_TYPES.contains(json.get("type").getAsString())) {
                             StageItemRestriction restriction = parseRestriction(json);
                             String id = path.getFileName().toString().replace(".json", "");
-                            ITEM_RESTRICTIONS.put(id, restriction);
+                            DATAPACK_ITEM_RESTRICTIONS.put(id, restriction);
                             LOGGER.info("Loaded item restriction: {}", id);
                         }
                     } catch (Exception e) {
@@ -131,7 +133,7 @@ public class StageItemHandler {
                     }
                 });
                 
-            LOGGER.info("Loaded {} item restrictions", ITEM_RESTRICTIONS.size());
+            LOGGER.info("Loaded {} item restrictions", DATAPACK_ITEM_RESTRICTIONS.size());
         } catch (IOException e) {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
@@ -151,12 +153,12 @@ public class StageItemHandler {
         
         LOGGER.debug("Checking container for player {}: {}", player.getName().getString(), container.getClass().getName());
         
-        if (ITEM_RESTRICTIONS.isEmpty()) {
+        if (!hasLoadedRestrictions()) {
             LOGGER.debug("No item restrictions loaded, skipping check");
             return;
         }
         
-        for (Map.Entry<String, StageItemRestriction> entry : ITEM_RESTRICTIONS.entrySet()) {
+        for (Map.Entry<String, StageItemRestriction> entry : allRestrictionEntries()) {
             String restrictionId = entry.getKey();
             StageItemRestriction restriction = entry.getValue();
             
@@ -404,7 +406,7 @@ public class StageItemHandler {
      */
     private static StageItemRestriction parseRestriction(JsonObject json) {
         StageItemRestriction restriction = new StageItemRestriction();
-        restriction.overwritable = json.has("overwritable") && json.get("overwritable").getAsBoolean();
+        // overwritable ignored (obsolete)
         
         if (json.has("restrictions") && json.get("restrictions").isJsonArray()) {
             for (JsonElement element : json.getAsJsonArray("restrictions")) {
@@ -547,6 +549,7 @@ public class StageItemHandler {
                                 
                                 // Parse consequence
                                 ifRule.consequence = ifObj.has("consequence") ? ifObj.get("consequence").getAsString() : rule.consequence;
+                                expandOtherCaseAll(ifRule.otherCase);
                                 
                                 rule.ifConditions.add(ifRule);
                             }
@@ -574,11 +577,8 @@ public class StageItemHandler {
                     rule.hideDefaultTooltips = ruleObj.has("hide_default_tooltips")
                             && ruleObj.get("hide_default_tooltips").getAsBoolean();
                     // Recipe-viewer presentation: overlay (default) | hide | partial | none
-                    if (ruleObj.has("rv") && ruleObj.get("rv").isJsonPrimitive()) {
-                        rule.rv = ruleObj.get("rv").getAsString().trim().toLowerCase();
-                    } else if (ruleObj.has("viewer") && ruleObj.get("viewer").isJsonPrimitive()) {
-                        rule.rv = ruleObj.get("viewer").getAsString().trim().toLowerCase();
-                    }
+                    rule.recipeViewer = parseRecipeViewer(ruleObj);
+                    expandOtherCaseAll(rule.otherCase);
 
                     restriction.restrictions.add(rule);
                 }
@@ -712,7 +712,7 @@ public class StageItemHandler {
     private static String getOtherCaseConsequence(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
         Item item = itemStack.getItem();
         
-        for (StageItemRestriction restriction : ITEM_RESTRICTIONS.values()) {
+        for (StageItemRestriction restriction : allRestrictions()) {
             for (StageItemRule rule : restriction.restrictions) {
                 // Check if this rule has other_case and if it includes the current type
                 if (rule.otherCase.contains(otherCaseType)) {
@@ -800,10 +800,10 @@ public class StageItemHandler {
      */
     public static List<StageItemRule> findRulesForItem(Item item) {
         List<StageItemRule> matched = new ArrayList<>();
-        if (item == null || ITEM_RESTRICTIONS.isEmpty()) {
+        if (item == null || !hasLoadedRestrictions()) {
             return matched;
         }
-        for (StageItemRestriction restriction : ITEM_RESTRICTIONS.values()) {
+        for (StageItemRestriction restriction : allRestrictions()) {
             if (restriction == null || restriction.restrictions == null) {
                 continue;
             }
@@ -873,16 +873,87 @@ public class StageItemHandler {
         return net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(condition.stage);
     }
 
+    private static java.util.Collection<StageItemRestriction> allRestrictions() {
+        if (SCRIPT_ITEM_RESTRICTIONS.isEmpty()) {
+            return DATAPACK_ITEM_RESTRICTIONS.values();
+        }
+        if (DATAPACK_ITEM_RESTRICTIONS.isEmpty()) {
+            return SCRIPT_ITEM_RESTRICTIONS.values();
+        }
+        java.util.ArrayList<StageItemRestriction> all =
+                new java.util.ArrayList<>(DATAPACK_ITEM_RESTRICTIONS.size() + SCRIPT_ITEM_RESTRICTIONS.size());
+        all.addAll(DATAPACK_ITEM_RESTRICTIONS.values());
+        all.addAll(SCRIPT_ITEM_RESTRICTIONS.values());
+        return all;
+    }
+
+    private static java.util.Set<Map.Entry<String, StageItemRestriction>> allRestrictionEntries() {
+        java.util.LinkedHashMap<String, StageItemRestriction> merged =
+                new java.util.LinkedHashMap<>(DATAPACK_ITEM_RESTRICTIONS);
+        merged.putAll(SCRIPT_ITEM_RESTRICTIONS);
+        return merged.entrySet();
+    }
+
+    public static void clearScriptRestrictions() {
+        SCRIPT_ITEM_RESTRICTIONS.clear();
+    }
+
+    public static void putScriptRestriction(String id, StageItemRestriction restriction) {
+        if (id == null || id.isBlank() || restriction == null) {
+            return;
+        }
+        SCRIPT_ITEM_RESTRICTIONS.put(id, restriction);
+    }
+
+    public static boolean hasRestrictionId(String id) {
+        return SCRIPT_ITEM_RESTRICTIONS.containsKey(id) || DATAPACK_ITEM_RESTRICTIONS.containsKey(id);
+    }
+
+    public static final String[] ALL_OTHER_CASES = {"right_click", "left_click", "main_hand", "off_hand"};
+
+    public static void expandOtherCaseAll(List<String> otherCase) {
+        if (otherCase == null || otherCase.isEmpty()) {
+            return;
+        }
+        boolean hasAll = false;
+        for (String s : otherCase) {
+            if ("all".equalsIgnoreCase(s)) {
+                hasAll = true;
+                break;
+            }
+        }
+        if (!hasAll) {
+            return;
+        }
+        otherCase.clear();
+        for (String s : ALL_OTHER_CASES) {
+            otherCase.add(s);
+        }
+    }
+
+    private static String parseRecipeViewer(JsonObject ruleObj) {
+        if (ruleObj.has("recipe_viewer") && ruleObj.get("recipe_viewer").isJsonPrimitive()) {
+            return ruleObj.get("recipe_viewer").getAsString().trim().toLowerCase();
+        }
+        if (ruleObj.has("rv") && ruleObj.get("rv").isJsonPrimitive()) {
+            return ruleObj.get("rv").getAsString().trim().toLowerCase();
+        }
+        if (ruleObj.has("viewer") && ruleObj.get("viewer").isJsonPrimitive()) {
+            return ruleObj.get("viewer").getAsString().trim().toLowerCase();
+        }
+        return "overlay";
+    }
+
     public static boolean hasLoadedRestrictions() {
-        return !ITEM_RESTRICTIONS.isEmpty();
+        return !DATAPACK_ITEM_RESTRICTIONS.isEmpty() || !SCRIPT_ITEM_RESTRICTIONS.isEmpty();
     }
 
     /** Normalized RV mode for a rule ({@code overlay}, {@code hide}, {@code partial}, {@code none}). */
     public static String rvMode(StageItemRule rule) {
-        if (rule == null || rule.rv == null || rule.rv.isBlank()) {
+        if (rule == null || rule.recipeViewer == null || rule.recipeViewer.isBlank()) {
             return "overlay";
         }
-        return switch (rule.rv.toLowerCase()) {
+        return switch (rule.recipeViewer.toLowerCase()) {
             case "hide", "hidden" -> "hide";
             case "partial", "generic" -> "partial";
             case "none", "off", "false" -> "none";
@@ -896,7 +967,6 @@ public class StageItemHandler {
      * Represents a complete item restriction
      */
     public static class StageItemRestriction {
-        public boolean overwritable = true;
         public List<StageItemRule> restrictions = new ArrayList<>();
     }
     
@@ -924,7 +994,9 @@ public class StageItemHandler {
          * Recipe-viewer / client presentation when this rule is active:
          * {@code overlay} (default), {@code hide}, {@code partial}, {@code none}.
          */
-        public String rv = "overlay";
+        public String recipeViewer = "overlay";
+        /** KubeJS Component tooltips (in addition to string tooltips). */
+        public java.util.List<net.minecraft.network.chat.Component> componentTooltips = new java.util.ArrayList<>();
     }
     
     /**

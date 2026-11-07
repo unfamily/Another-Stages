@@ -41,7 +41,8 @@ public final class StageRecipeHandler {
     private static final Set<String> ACCEPTED_TYPES = Set.of(TYPE_STAGE_RECIPE);
     private static final Logger LOGGER = LoggerFactory.getLogger(StageRecipeHandler.class);
 
-    private static final List<StageRecipeRule> RULES = new ArrayList<>();
+    private static final List<StageRecipeRule> DATAPACK_RULES = new ArrayList<>();
+    private static final Map<String, StageRecipeRule> SCRIPT_RULES = new HashMap<>();
     private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_ID = new HashMap<>();
     private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_TYPE = new HashMap<>();
     private static final List<StageRecipeRule> IO_RULES = new ArrayList<>();
@@ -49,10 +50,7 @@ public final class StageRecipeHandler {
     private StageRecipeHandler() {}
 
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
-        RULES.clear();
-        BY_RECIPE_ID.clear();
-        BY_RECIPE_TYPE.clear();
-        IO_RULES.clear();
+        DATAPACK_RULES.clear();
         try {
             Map<Identifier, JsonElement> merged = resourceManagerOrNull != null
                     ? LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES)
@@ -76,14 +74,53 @@ public final class StageRecipeHandler {
                     if (!LoadModGate.shouldIncludeAtLoad(ruleObj, LOGGER, "stage_recipe_rule")) {
                         continue;
                     }
-                    StageRecipeRule rule = parseRule(ruleObj);
-                    RULES.add(rule);
-                    indexRule(rule);
+                    DATAPACK_RULES.add(parseRule(ruleObj));
                 }
             }
-            LOGGER.info("Loaded {} stage recipe rules", RULES.size());
+            rebuildIndexes();
+            LOGGER.info("Loaded {} stage recipe rules ({} script)", ruleCount(), SCRIPT_RULES.size());
         } catch (Exception e) {
             LOGGER.error("Error loading stage recipe rules: {}", e.getMessage());
+        }
+    }
+
+    public static void clearScriptRules() {
+        SCRIPT_RULES.clear();
+        rebuildIndexes();
+    }
+
+    public static void putScriptRule(String id, StageRecipeRule rule) {
+        if (id == null || id.isBlank() || rule == null) {
+            return;
+        }
+        SCRIPT_RULES.put(id, rule);
+        rebuildIndexes();
+    }
+
+    public static boolean hasRuleId(String id) {
+        return SCRIPT_RULES.containsKey(id);
+    }
+
+    private static int ruleCount() {
+        return DATAPACK_RULES.size() + SCRIPT_RULES.size();
+    }
+
+    private static Iterable<StageRecipeRule> allRules() {
+        if (SCRIPT_RULES.isEmpty()) {
+            return DATAPACK_RULES;
+        }
+        ArrayList<StageRecipeRule> all = new ArrayList<>(ruleCount());
+        all.addAll(DATAPACK_RULES);
+        all.addAll(SCRIPT_RULES.values());
+        return all;
+    }
+
+    private static void rebuildIndexes() {
+        BY_RECIPE_ID.clear();
+        BY_RECIPE_TYPE.clear();
+        IO_RULES.clear();
+        for (StageRecipeRule rule : allRules()) {
+            indexRule(rule);
         }
     }
 
@@ -158,7 +195,7 @@ public final class StageRecipeHandler {
 
     public static Set<String> collectReferencedStages() {
         Set<String> stages = new HashSet<>();
-        for (StageRecipeRule rule : RULES) {
+        for (StageRecipeRule rule : allRules()) {
             for (StageCondition c : rule.stages) {
                 if (c.stage != null && !c.stage.isBlank()) {
                     stages.add(c.stage.trim());
@@ -173,7 +210,7 @@ public final class StageRecipeHandler {
             @Nullable UUID ownerUuid,
             @Nullable Level level,
             @Nullable ServerPlayer onlinePlayer) {
-        if (recipeId == null || RULES.isEmpty()) {
+        if (recipeId == null || ruleCount() == 0) {
             return false;
         }
         RecipeHolder<?> holder = resolveHolder(recipeId, level);

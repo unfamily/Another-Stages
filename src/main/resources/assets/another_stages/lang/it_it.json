@@ -1,0 +1,21 @@
+{
+  "another_stages.configuration.title": "Another Stages",
+  "another_stages.configuration.section.another_stages.common.toml": "Another Stages",
+  "another_stages.configuration.section.another_stages.common.toml.title": "Another Stages",
+  "config.another_stages.section.logging": "Log",
+  "config.another_stages.option.logging.enabled": "Abilita i log",
+  "config.another_stages.section.mixins": "Mixin",
+  "config.another_stages.option.mixins.crafting": "Menu crafting",
+  "config.another_stages.option.mixins.furnace": "Forno",
+  "config.another_stages.option.mixins.stonecutter": "Tagliapietre",
+  "config.another_stages.option.mixins.smithing": "Fabbro",
+  "config.another_stages.option.mixins.crafter": "Crafter",
+  "config.another_stages.option.mixins.campfire": "Falò",
+  "config.another_stages.option.mixins.recipe_book_place": "Piazzamento dal libro ricette",
+  "config.another_stages.option.mixins.fastbench": "Fast Workbench",
+  "config.another_stages.option.mixins.fastfurnace": "Fast Furnace",
+  "config.another_stages.option.mixins.block_appearance": "Aspetto blocchi (client)",
+  "tooltip.another_stages.item_locked": "Bloccato da uno stage",
+  "tooltip.another_stages.item_locked_stage": "Bloccato fino allo stage: %s",
+  "commands.another_stages.kubejs_stages_reloaded": "Restrizioni Another Stages da KubeJS ricaricate (soft reload di server_scripts)."
+}

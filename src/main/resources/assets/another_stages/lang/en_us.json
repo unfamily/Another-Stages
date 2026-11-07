@@ -16,5 +16,6 @@
   "config.another_stages.option.mixins.fastfurnace": "Fast Furnace",
   "config.another_stages.option.mixins.block_appearance": "Block appearance (client)",
   "tooltip.another_stages.item_locked": "Locked by stage",
-  "tooltip.another_stages.item_locked_stage": "Locked until stage: %s"
+  "tooltip.another_stages.item_locked_stage": "Locked until stage: %s",
+  "commands.another_stages.kubejs_stages_reloaded": "KubeJS Another Stages restrictions reloaded (server_scripts soft reload)."
 }

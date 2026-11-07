@@ -28,10 +28,11 @@ public class AnotherStages {
         AsAttachmentTypes.register(modEventBus);
         modEventBus.addListener(AsNetworking::register);
         AsNetworking.installHooks();
-        // Install order builds reload chain: Library <- items <- recipes <- blocks
+        // Install order builds reload chain: Library <- items <- recipes <- blocks <- kube soft-reload (outer)
         StageItemBootstrap.install();
         StageRecipeBootstrap.install();
         StageBlockBootstrap.install();
+        net.unfamily.anotherstages.kubejs.KubejsStageSoftReload.install();
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             net.unfamily.anotherstages.client.StageItemClientSetup.register(modEventBus);
