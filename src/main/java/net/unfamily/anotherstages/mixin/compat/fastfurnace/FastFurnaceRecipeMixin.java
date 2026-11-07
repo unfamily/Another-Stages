@@ -2,11 +2,10 @@ package net.unfamily.anotherstages.mixin.compat.fastfurnace;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import dev.shadowsoffire.fastfurnace.mixin.MixinAbstractFurnaceBlockEntity;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.config.AsConfig;
@@ -15,15 +14,17 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 /**
- * FastFurnace redirects furnace {@code CachedCheck#getRecipeFor} to {@code getRecipe}.
- * Wrap that method so a stage-locked cook never starts (no owner still evaluates stage rules).
- * Clears FastFurnace's sticky {@code curRecipe} / {@code failedMatch} cache when blocked.
+ * FastFurnace merges {@code getRecipe(ServerLevel)} onto {@link AbstractFurnaceBlockEntity}
+ * and redirects {@code serverTick} / {@code getTotalCookTime} through it. Wrap that merged
+ * method (not FastFurnace's mixin class) so stage-locked cooks never start.
  */
-@Mixin(value = MixinAbstractFurnaceBlockEntity.class, priority = 1100)
+@Mixin(value = AbstractFurnaceBlockEntity.class, priority = 1100)
 public abstract class FastFurnaceRecipeMixin {
+    /** FastFurnace {@code @Unique} field merged onto the furnace BE. */
     @Shadow(remap = false)
     protected RecipeHolder<?> curRecipe;
 
+    /** FastFurnace {@code @Unique} field merged onto the furnace BE. */
     @Shadow(remap = false)
     protected ItemStack failedMatch;
 
@@ -45,9 +46,9 @@ public abstract class FastFurnaceRecipeMixin {
         if (!blocked) {
             return holder;
         }
-        // Sticky cache would keep returning the locked holder on the next early-out match path.
+        // Match FastFurnace early-out: sticky failedMatch until the input stack changes.
         this.curRecipe = null;
-        ItemStack input = be instanceof Container container ? container.getItem(0) : ItemStack.EMPTY;
+        ItemStack input = ((AbstractFurnaceBlockEntity) (Object) this).getItem(0);
         this.failedMatch = input.isEmpty() ? ItemStack.EMPTY : input.copy();
         return null;
     }
