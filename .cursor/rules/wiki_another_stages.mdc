@@ -1,0 +1,28 @@
+---
+description: Keep Another Stages wiki current; Utils stage wiki is redirect-only
+alwaysApply: true
+---
+
+# Wiki: Another Stages is canonical
+
+When stage item / recipe / block / Kube / datapack behavior changes in this mod, **update the Another Stages wiki in the same task** (do not leave docs stale).
+
+## Where
+
+- Canonical docs: `/home/unfamily/git_wiki/Another-Stages.wiki/`  
+  (Stage-Items, Stage-Recipes, Stage-Blocks, Home, etc.)
+- Utils wiki (`Iskandert_Utilities.wiki` Stage-* pages): **redirect / short “Moved” notice only** — point to the Another Stages wiki. Do not evolve full stage docs there.
+- Do not recreate long stage tutorials under Utils or Library wikis.
+
+## Inheritance
+
+Another Stages owns gating and **accepted the pre-AS JSON surface** (legacy `iska_utils` / `iska_lib` types and load paths still work). Document new fields and Kube managers on the AS wiki; mention legacy compatibility briefly where useful.
+
+## What to update
+
+- New/changed JSON fields, defaults, and removed aliases
+- Kube verbs (`AnotherStages.items` / `.recipes` / `.blocks`)
+- Client/JEI presentation (`recipe_viewer`, names, tooltips)
+- Reload commands and ownership notes (AS vs Library skip)
+
+Wiki prose may be Italian or English as existing pages; **code/comments stay English**.

@@ -152,13 +152,8 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        public ItemRestrictBuilder viewerPartial() {
-            rule.recipeViewer = "partial";
-            return this;
-        }
-
-        public ItemRestrictBuilder viewerNone() {
-            rule.recipeViewer = "none";
+        public ItemRestrictBuilder viewerHardcore() {
+            rule.recipeViewer = "hardcore";
             return this;
         }
 
@@ -177,6 +172,17 @@ public final class ItemRestrictionManager {
 
         public ItemRestrictBuilder hideDefaultTooltips(boolean hide) {
             rule.hideDefaultTooltips = hide;
+            return this;
+        }
+
+        /** When true (default), show Unfamiliar Item/Fish instead of the real name. */
+        public ItemRestrictBuilder hideItemName(boolean hide) {
+            rule.hideItemName = hide;
+            return this;
+        }
+
+        public ItemRestrictBuilder showRealName() {
+            rule.hideItemName = false;
             return this;
         }
 
@@ -208,6 +214,7 @@ public final class ItemRestrictionManager {
             parts.add(rule.stagesLogic);
             parts.add(rule.consequence);
             parts.add(rule.recipeViewer);
+            parts.add(String.valueOf(rule.hideItemName));
             parts.add(String.valueOf(rule.containersWhitelist));
             parts.add(String.join(",", rule.items));
             parts.add(String.join(",", rule.exclude));

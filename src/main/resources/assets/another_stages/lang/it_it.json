@@ -17,5 +17,9 @@
   "config.another_stages.option.mixins.block_appearance": "Aspetto blocchi (client)",
   "tooltip.another_stages.item_locked": "Bloccato da uno stage",
   "tooltip.another_stages.item_locked_stage": "Bloccato fino allo stage: %s",
+  "tooltip.another_stages.recipe_locked": "Ricetta bloccata da uno stage",
+  "tooltip.another_stages.recipe_locked_stage": "Ricetta bloccata fino allo stage: %s",
+  "item.another_stages.unfamiliar_item": "Oggetto Sconosciuto",
+  "item.another_stages.unfamiliar_fish": "Pesce Sconosciuto",
   "commands.another_stages.kubejs_stages_reloaded": "Restrizioni Another Stages da KubeJS ricaricate (soft reload di server_scripts)."
 }

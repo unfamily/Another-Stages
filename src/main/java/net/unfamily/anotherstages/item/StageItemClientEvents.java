@@ -11,8 +11,7 @@ import net.unfamily.anotherstages.AnotherStages;
 import java.util.List;
 
 /**
- * Applies optional custom tooltips from stage-item rules.
- * Matching is by item id/tag/mod only (stage gates are enforced server-side).
+ * Applies optional custom tooltips, lock hints, and Unfamiliar Item renaming from stage-item rules.
  */
 @EventBusSubscriber(modid = AnotherStages.MOD_ID, value = Dist.CLIENT)
 public final class StageItemClientEvents {
@@ -37,9 +36,16 @@ public final class StageItemClientEvents {
                 break;
             }
         }
+
+        Component displayName = displayNameFor(stack, event.getToolTip().isEmpty()
+                ? null
+                : event.getToolTip().getFirst());
+
         if (hideDefault) {
             event.getToolTip().clear();
-            event.getToolTip().add(stack.getHoverName());
+            event.getToolTip().add(displayName);
+        } else if (!event.getToolTip().isEmpty()) {
+            event.getToolTip().set(0, displayName);
         }
 
         for (StageItemHandler.StageItemRule rule : rules) {
@@ -60,27 +66,56 @@ public final class StageItemClientEvents {
             }
         }
 
-        if (event.getEntity() != null && event.getEntity().level() != null) {
-            var active = StageItemHandler.findActiveRules(
-                    event.getEntity(), event.getEntity().level(), stack.getItem());
-            if (!active.isEmpty()) {
-                String mode = StageItemHandler.rvMode(active.getFirst());
-                if (!"none".equals(mode) && !"hide".equals(mode)) {
-                    String stageHint = StageItemRvHelper.firstStageHint(stack.getItem());
-                    if (!stageHint.isBlank()) {
-                        event.getToolTip().add(Component.translatable(
-                                "tooltip.another_stages.item_locked_stage", stageHint));
-                    } else {
-                        event.getToolTip().add(Component.translatable(
-                                "tooltip.another_stages.item_locked"));
-                    }
-                }
+        if (event.getEntity() == null || event.getEntity().level() == null) {
+            return;
+        }
+        var active = StageItemHandler.findActiveRules(
+                event.getEntity(), event.getEntity().level(), stack.getItem());
+        if (active.isEmpty()) {
+            return;
+        }
+
+        StageItemRvHelper.Mode mode = StageItemRvHelper.modeFor(
+                event.getEntity(), event.getEntity().level(), stack.getItem());
+        if (mode == StageItemRvHelper.Mode.NONE || mode == StageItemRvHelper.Mode.HIDE) {
+            return;
+        }
+
+        boolean anyCustom = false;
+        for (StageItemHandler.StageItemRule rule : active) {
+            if (StageItemRvHelper.hasCustomTooltips(rule)) {
+                anyCustom = true;
+                break;
             }
+        }
+        if (anyCustom) {
+            return;
+        }
+
+        List<String> stages = StageItemRvHelper.stageHints(stack.getItem());
+        if (stages.isEmpty()) {
+            event.getToolTip().add(Component.translatable("tooltip.another_stages.item_locked"));
+        } else {
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.another_stages.item_locked_stage", String.join(", ", stages)));
         }
     }
 
+    /**
+     * Public for {@link net.unfamily.anotherstages.mixin.ItemStackHoverNameMixin}.
+     */
+    public static Component displayNameFor(ItemStack stack, Component fallbackName) {
+        if (StageItemRvHelper.shouldHideItemName(stack.getItem())) {
+            return StageItemRvHelper.unfamiliarName();
+        }
+        Component base = fallbackName != null ? fallbackName : stack.getItem().getName(stack);
+        if (StageItemRvHelper.shouldDecorateRealName(stack.getItem())) {
+            return StageItemRvHelper.decorateRealName(base);
+        }
+        return base;
+    }
+
     private static Component resolveTooltip(String raw) {
-        // Prefer lang keys (dot-separated, no spaces); otherwise treat as literal text.
         if (raw.indexOf(' ') < 0 && raw.indexOf('.') >= 0) {
             return Component.translatable(raw);
         }

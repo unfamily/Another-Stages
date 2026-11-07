@@ -1,5 +1,6 @@
 package net.unfamily.anotherstages.kubejs;
 
+import net.minecraft.network.chat.Component;
 import net.unfamily.anotherstages.recipe.StageCondition;
 import net.unfamily.anotherstages.recipe.StageRecipeHandler;
 import net.unfamily.anotherstages.recipe.StageRecipeRule;
@@ -80,6 +81,34 @@ public final class RecipeRestrictionManager {
             return this;
         }
 
+        public RecipeRestrictBuilder viewerOverlay() {
+            rule.recipeViewer = "overlay";
+            return this;
+        }
+
+        public RecipeRestrictBuilder viewerHide() {
+            rule.recipeViewer = "hide";
+            return this;
+        }
+
+        public RecipeRestrictBuilder tooltip(Component component) {
+            if (component != null) {
+                rule.componentTooltips.add(component);
+            }
+            return this;
+        }
+
+        public RecipeRestrictBuilder tooltips(Object tips) {
+            rule.tooltips.clear();
+            rule.tooltips.addAll(KubeStageMaps.stringList(tips));
+            return this;
+        }
+
+        public RecipeRestrictBuilder hideDefaultTooltips(boolean hide) {
+            rule.hideDefaultTooltips = hide;
+            return this;
+        }
+
         private void commit() {
             String id = explicitId != null && !explicitId.isBlank()
                     ? explicitId
@@ -90,6 +119,7 @@ public final class RecipeRestrictionManager {
         private String fingerprint() {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
+            parts.add(rule.recipeViewer);
             parts.add(String.join(",", rule.recipes));
             parts.add(String.join(",", rule.recipeTypes));
             parts.add(String.join(",", rule.outputs));

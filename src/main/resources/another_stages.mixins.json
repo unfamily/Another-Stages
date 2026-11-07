@@ -14,7 +14,8 @@
     "ServerPlaceRecipeMixin"
   ],
   "client": [
-    "BlockAppearanceMixin"
+    "BlockAppearanceMixin",
+    "ItemStackHoverNameMixin"
   ],
   "minVersion": "0.8"
 }

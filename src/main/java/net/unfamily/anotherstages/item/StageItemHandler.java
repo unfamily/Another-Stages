@@ -576,7 +576,10 @@ public class StageItemHandler {
                     }
                     rule.hideDefaultTooltips = ruleObj.has("hide_default_tooltips")
                             && ruleObj.get("hide_default_tooltips").getAsBoolean();
-                    // Recipe-viewer presentation: overlay (default) | hide | partial | none
+                    // hide_item_name defaults to true (Unfamiliar Item) when omitted
+                    rule.hideItemName = !ruleObj.has("hide_item_name")
+                            || ruleObj.get("hide_item_name").getAsBoolean();
+                    // Recipe-viewer presentation: overlay (default) | hardcore | hide
                     rule.recipeViewer = parseRecipeViewer(ruleObj);
                     expandOtherCaseAll(rule.otherCase);
 
@@ -935,12 +938,6 @@ public class StageItemHandler {
         if (ruleObj.has("recipe_viewer") && ruleObj.get("recipe_viewer").isJsonPrimitive()) {
             return ruleObj.get("recipe_viewer").getAsString().trim().toLowerCase();
         }
-        if (ruleObj.has("rv") && ruleObj.get("rv").isJsonPrimitive()) {
-            return ruleObj.get("rv").getAsString().trim().toLowerCase();
-        }
-        if (ruleObj.has("viewer") && ruleObj.get("viewer").isJsonPrimitive()) {
-            return ruleObj.get("viewer").getAsString().trim().toLowerCase();
-        }
         return "overlay";
     }
 
@@ -948,15 +945,14 @@ public class StageItemHandler {
         return !DATAPACK_ITEM_RESTRICTIONS.isEmpty() || !SCRIPT_ITEM_RESTRICTIONS.isEmpty();
     }
 
-    /** Normalized RV mode for a rule ({@code overlay}, {@code hide}, {@code partial}, {@code none}). */
+    /** Normalized RV mode for a rule ({@code overlay}, {@code hardcore}, {@code hide}). */
     public static String rvMode(StageItemRule rule) {
         if (rule == null || rule.recipeViewer == null || rule.recipeViewer.isBlank()) {
             return "overlay";
         }
         return switch (rule.recipeViewer.toLowerCase()) {
-            case "hide", "hidden" -> "hide";
-            case "partial", "generic" -> "partial";
-            case "none", "off", "false" -> "none";
+            case "hide" -> "hide";
+            case "hardcore" -> "hardcore";
             default -> "overlay";
         };
     }
@@ -991,8 +987,13 @@ public class StageItemHandler {
         /** When true, default item tooltips are cleared before custom ones are added. */
         public boolean hideDefaultTooltips = false;
         /**
+         * When true (default), replace the display name with Unfamiliar Item / Fish while the rule
+         * is active and {@code recipe_viewer} is overlay or hardcore.
+         */
+        public boolean hideItemName = true;
+        /**
          * Recipe-viewer / client presentation when this rule is active:
-         * {@code overlay} (default), {@code hide}, {@code partial}, {@code none}.
+         * {@code overlay} (default), {@code hardcore}, {@code hide}.
          */
         public String recipeViewer = "overlay";
         /** KubeJS Component tooltips (in addition to string tooltips). */

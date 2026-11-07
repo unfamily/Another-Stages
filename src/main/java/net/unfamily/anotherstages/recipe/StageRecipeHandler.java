@@ -174,7 +174,89 @@ public final class StageRecipeHandler {
         readStringList(ruleObj, "inputs", rule.inputs);
         readStringList(ruleObj, "input", rule.inputs);
         readStringList(ruleObj, "exclude_recipes", rule.excludeRecipes);
+        if (ruleObj.has("recipe_viewer") && ruleObj.get("recipe_viewer").isJsonPrimitive()) {
+            rule.recipeViewer = ruleObj.get("recipe_viewer").getAsString().trim().toLowerCase();
+        }
+        if (ruleObj.has("tooltips") && ruleObj.get("tooltips").isJsonArray()) {
+            for (JsonElement tip : ruleObj.getAsJsonArray("tooltips")) {
+                if (tip.isJsonPrimitive()) {
+                    rule.tooltips.add(tip.getAsString());
+                }
+            }
+        }
+        rule.hideDefaultTooltips = ruleObj.has("hide_default_tooltips")
+                && ruleObj.get("hide_default_tooltips").getAsBoolean();
         return rule;
+    }
+
+    /** Normalized RV mode: {@code overlay} (default) or {@code hide}. */
+    public static String rvMode(StageRecipeRule rule) {
+        if (rule == null || rule.recipeViewer == null || rule.recipeViewer.isBlank()) {
+            return "overlay";
+        }
+        return "hide".equalsIgnoreCase(rule.recipeViewer) ? "hide" : "overlay";
+    }
+
+    public static boolean hasLoadedRules() {
+        return ruleCount() > 0;
+    }
+
+    /**
+     * Active rules for a recipe on the client (uses {@link net.unfamily.anotherstages.client.ClientStageCache}).
+     */
+    public static List<StageRecipeRule> findActiveRulesClient(
+            Identifier recipeId,
+            @Nullable RecipeHolder<?> holder) {
+        List<StageRecipeRule> active = new ArrayList<>();
+        if (recipeId == null || ruleCount() == 0) {
+            return active;
+        }
+        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder);
+        String recipeIdStr = recipeId.toString();
+        for (StageRecipeRule rule : candidates) {
+            if (rule.excludeRecipes.contains(recipeIdStr)) {
+                continue;
+            }
+            if (holder != null && !matchesIo(rule, holder, recipeIdStr)) {
+                continue;
+            }
+            if (ruleAppliesClient(rule)) {
+                active.add(rule);
+            }
+        }
+        return active;
+    }
+
+    private static boolean ruleAppliesClient(StageRecipeRule rule) {
+        if (rule.stages.isEmpty()) {
+            return true;
+        }
+        boolean and = !"OR".equalsIgnoreCase(rule.stagesLogic);
+        if (and) {
+            for (StageCondition condition : rule.stages) {
+                boolean has = checkConditionClient(condition);
+                if (has != condition.is) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (StageCondition condition : rule.stages) {
+            boolean has = checkConditionClient(condition);
+            if (has == condition.is) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkConditionClient(StageCondition condition) {
+        String type = condition.stageType == null ? "player" : condition.stageType;
+        return switch (type) {
+            case "world" -> net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(condition.stage);
+            case "team" -> net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(condition.stage);
+            default -> net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(condition.stage);
+        };
     }
 
     private static void readStringList(JsonObject obj, String key, List<String> out) {
