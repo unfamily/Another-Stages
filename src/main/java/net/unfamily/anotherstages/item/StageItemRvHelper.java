@@ -30,14 +30,24 @@ public final class StageItemRvHelper {
         HIDE
     }
 
+    /** Overlay badge: 24×24 lock (larger canvas would shrink the icon too much). */
     public static final Identifier LOCK_OVERLAY =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/gui/lock.png");
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked.png");
+    public static final int LOCK_OVERLAY_SIZE = 24;
     public static final Identifier HARDCORE_TEXTURE =
             Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked_hardcore.png");
+    /** Overlay badge: 32×32 so the fish art stays readable vs the 24×24 lock. */
     public static final Identifier FISH_OVERLAY =
             Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish.png");
+    public static final int FISH_OVERLAY_SIZE = 32;
     public static final Identifier FISH_HARDCORE =
             Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish_hardcore.png");
+
+    /** Client item-model ids ({@code assets/.../items/*.json}) used to replace the real item when hardcore. */
+    public static final Identifier HARDCORE_ITEM_MODEL =
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_locked_hardcore");
+    public static final Identifier FISH_HARDCORE_ITEM_MODEL =
+            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_fish_hardcore");
 
     private static final int UNFAMILIAR_RED = 0xFF5555;
     private static final String LOCK_CHAR = "\uD83D\uDD12"; // 🔒
@@ -90,6 +100,16 @@ public final class StageItemRvHelper {
         };
     }
 
+    /** Native pixel size of the active overlay badge texture (24 lock / 32 fish). */
+    public static int overlayTextureSize() {
+        return StageAprilFools.isAprilFools() ? FISH_OVERLAY_SIZE : LOCK_OVERLAY_SIZE;
+    }
+
+    /** Flat item model that replaces the real item everywhere while hardcore is active. */
+    public static Identifier hardcoreItemModelId() {
+        return StageAprilFools.isAprilFools() ? FISH_HARDCORE_ITEM_MODEL : HARDCORE_ITEM_MODEL;
+    }
+
     /**
      * Whether the display name should be replaced with Unfamiliar Item/Fish.
      * Default true when any active visible rule keeps {@code hide_item_name}.
@@ -131,7 +151,33 @@ public final class StageItemRvHelper {
         return true;
     }
 
+    /** Hidden display name for the strongest active hide_item_name rule (custom or Unfamiliar). */
+    public static Component hiddenDisplayName(Item item) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.level != null && item != null) {
+            for (StageItemRule rule : StageItemHandler.findActiveRules(mc.player, mc.level, item)) {
+                String rv = StageItemHandler.rvMode(rule);
+                if ("hide".equals(rv) || !rule.hideItemName) {
+                    continue;
+                }
+                if (rule.hiddenItemNameComponent != null) {
+                    return rule.hiddenItemNameComponent.copy();
+                }
+                if (rule.hiddenItemName != null && !rule.hiddenItemName.isBlank()) {
+                    return resolveNameString(rule.hiddenItemName.trim());
+                }
+            }
+        }
+        return defaultUnfamiliarName();
+    }
+
+    /** @deprecated use {@link #hiddenDisplayName(Item)} */
+    @Deprecated
     public static Component unfamiliarName() {
+        return defaultUnfamiliarName();
+    }
+
+    public static Component defaultUnfamiliarName() {
         if (StageAprilFools.isAprilFools()) {
             MutableComponent fish = Component.translatable("item.another_stages.unfamiliar_fish")
                     .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(UNFAMILIAR_RED)));
@@ -139,6 +185,13 @@ public final class StageItemRvHelper {
         }
         return Component.translatable("item.another_stages.unfamiliar_item")
                 .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(UNFAMILIAR_RED)));
+    }
+
+    private static Component resolveNameString(String raw) {
+        if (raw.indexOf(' ') < 0 && raw.indexOf('.') >= 0) {
+            return Component.translatable(raw);
+        }
+        return Component.literal(raw);
     }
 
     public static Component decorateRealName(Component original) {

@@ -20,10 +20,23 @@ public final class StageRecipeRvHelper {
         HIDE
     }
 
-    public static final Identifier LOCK_ARROW =
+    public enum Corner {
+        TOP_LEFT,
+        TOP_RIGHT,
+        BOTTOM_LEFT,
+        BOTTOM_RIGHT
+    }
+
+    /** Same art as item overlay: 24×24 lock / 32×32 fish. */
+    public static final Identifier RECIPE_LOCKED =
             Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locked.png");
-    public static final Identifier FISH_ARROW =
+    public static final Identifier RECIPE_LOCKED_FISH =
             Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_fish.png");
+    public static final int RECIPE_LOCKED_SIZE = 24;
+    public static final int RECIPE_LOCKED_FISH_SIZE = 32;
+
+    /** Slight reddish wash over the whole recipe layout. */
+    public static final int OVERLAY_TINT = 0x44AA3030;
 
     private StageRecipeRvHelper() {}
 
@@ -51,7 +64,12 @@ public final class StageRecipeRvHelper {
     }
 
     public static Identifier lockTexture() {
-        return StageAprilFools.isAprilFools() ? FISH_ARROW : LOCK_ARROW;
+        return StageAprilFools.isAprilFools() ? RECIPE_LOCKED_FISH : RECIPE_LOCKED;
+    }
+
+    /** Native pixel size of {@link #lockTexture()} (24 lock / 32 fish). */
+    public static int lockTextureSize() {
+        return StageAprilFools.isAprilFools() ? RECIPE_LOCKED_FISH_SIZE : RECIPE_LOCKED_SIZE;
     }
 
     public static List<StageRecipeRule> activeOverlayRules(
@@ -66,6 +84,40 @@ public final class StageRecipeRvHelper {
             }
         }
         return out;
+    }
+
+    /** Corner from the first active overlay rule (default top_right). */
+    public static Corner overlayCorner(@Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+        for (StageRecipeRule rule : activeOverlayRules(recipeId, holder)) {
+            return toCorner(StageRecipeHandler.overlayCorner(rule));
+        }
+        return Corner.TOP_RIGHT;
+    }
+
+    public static Corner toCorner(String normalized) {
+        return switch (StageRecipeHandler.normalizeOverlayCorner(normalized)) {
+            case "top_left" -> Corner.TOP_LEFT;
+            case "bottom_left" -> Corner.BOTTOM_LEFT;
+            case "bottom_right" -> Corner.BOTTOM_RIGHT;
+            default -> Corner.TOP_RIGHT;
+        };
+    }
+
+    /**
+     * Badge box [x, y] for a 16×16 icon inside the category layout.
+     */
+    public static int[] lockBox(int width, int height, int lockSize, int pad, Corner corner) {
+        int w = Math.max(lockSize, width);
+        int h = Math.max(lockSize, height);
+        int x = switch (corner) {
+            case TOP_LEFT, BOTTOM_LEFT -> pad;
+            case TOP_RIGHT, BOTTOM_RIGHT -> Math.max(0, w - lockSize - pad);
+        };
+        int y = switch (corner) {
+            case TOP_LEFT, TOP_RIGHT -> pad;
+            case BOTTOM_LEFT, BOTTOM_RIGHT -> Math.max(0, h - lockSize - pad);
+        };
+        return new int[]{x, y};
     }
 
     public static List<String> stageHints(List<StageRecipeRule> rules) {

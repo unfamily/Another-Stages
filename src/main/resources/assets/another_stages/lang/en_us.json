@@ -21,5 +21,7 @@
   "tooltip.another_stages.recipe_locked_stage": "Recipe locked until stage: %s",
   "item.another_stages.unfamiliar_item": "Unfamiliar Item",
   "item.another_stages.unfamiliar_fish": "Unfamiliar Fish",
+  "message.another_stages.gui_blocked": "This menu is locked by a stage",
+  "config.another_stages.option.mixins.gui_slots": "GUI slot gating",
   "commands.another_stages.kubejs_stages_reloaded": "KubeJS Another Stages restrictions reloaded (server_scripts soft reload)."
 }

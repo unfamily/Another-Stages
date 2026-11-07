@@ -106,7 +106,7 @@ public final class StageItemClientEvents {
      */
     public static Component displayNameFor(ItemStack stack, Component fallbackName) {
         if (StageItemRvHelper.shouldHideItemName(stack.getItem())) {
-            return StageItemRvHelper.unfamiliarName();
+            return StageItemRvHelper.hiddenDisplayName(stack.getItem());
         }
         Component base = fallbackName != null ? fallbackName : stack.getItem().getName(stack);
         if (StageItemRvHelper.shouldDecorateRealName(stack.getItem())) {

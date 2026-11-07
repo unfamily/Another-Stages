@@ -10,7 +10,7 @@ import net.unfamily.iskalib.stage.StageReloadHooks;
 
 /**
  * Soft-reloads KubeJS {@code server_scripts} before stage datapack reload so
- * {@code AnotherStages.items/recipes/blocks} script rules refresh in the same command.
+ * {@code AnotherStages.items/recipes/blocks/guis} script rules refresh in the same command.
  */
 public final class KubejsStageSoftReload {
     private static boolean installed;

@@ -1,6 +1,7 @@
 package net.unfamily.anotherstages.kubejs;
 
 import net.unfamily.anotherstages.block.StageBlockHandler;
+import net.unfamily.anotherstages.gui.StageGuiHandler;
 import net.unfamily.anotherstages.item.StageItemHandler;
 import net.unfamily.anotherstages.recipe.StageRecipeHandler;
 
@@ -18,6 +19,7 @@ public final class PendingScriptRestrictions {
         StageItemHandler.clearScriptRestrictions();
         StageRecipeHandler.clearScriptRules();
         StageBlockHandler.clearScriptRules();
+        StageGuiHandler.clearScriptRules();
     }
 
     public static void enqueue(Runnable commit) {

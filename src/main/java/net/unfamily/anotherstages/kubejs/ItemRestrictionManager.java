@@ -175,7 +175,7 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        /** When true (default), show Unfamiliar Item/Fish instead of the real name. */
+        /** When true (default), show Unfamiliar Item/Fish (or {@link #hiddenItemName}) instead of the real name. */
         public ItemRestrictBuilder hideItemName(boolean hide) {
             rule.hideItemName = hide;
             return this;
@@ -183,6 +183,24 @@ public final class ItemRestrictionManager {
 
         public ItemRestrictBuilder showRealName() {
             rule.hideItemName = false;
+            return this;
+        }
+
+        /** Custom hidden display name (Kube Text/Component). Implies {@code hide_item_name}. */
+        public ItemRestrictBuilder hiddenItemName(Component component) {
+            if (component != null) {
+                rule.hiddenItemNameComponent = component;
+                rule.hideItemName = true;
+            }
+            return this;
+        }
+
+        /** Custom hidden display name as lang key or literal string (datapack-compatible). */
+        public ItemRestrictBuilder hiddenItemName(String name) {
+            if (name != null && !name.isBlank()) {
+                rule.hiddenItemName = name.trim();
+                rule.hideItemName = true;
+            }
             return this;
         }
 

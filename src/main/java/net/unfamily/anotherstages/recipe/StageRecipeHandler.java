@@ -177,6 +177,9 @@ public final class StageRecipeHandler {
         if (ruleObj.has("recipe_viewer") && ruleObj.get("recipe_viewer").isJsonPrimitive()) {
             rule.recipeViewer = ruleObj.get("recipe_viewer").getAsString().trim().toLowerCase();
         }
+        if (ruleObj.has("overlay_corner") && ruleObj.get("overlay_corner").isJsonPrimitive()) {
+            rule.overlayCorner = normalizeOverlayCorner(ruleObj.get("overlay_corner").getAsString());
+        }
         if (ruleObj.has("tooltips") && ruleObj.get("tooltips").isJsonArray()) {
             for (JsonElement tip : ruleObj.getAsJsonArray("tooltips")) {
                 if (tip.isJsonPrimitive()) {
@@ -195,6 +198,26 @@ public final class StageRecipeHandler {
             return "overlay";
         }
         return "hide".equalsIgnoreCase(rule.recipeViewer) ? "hide" : "overlay";
+    }
+
+    /** Normalized overlay badge corner. */
+    public static String overlayCorner(StageRecipeRule rule) {
+        if (rule == null) {
+            return "top_right";
+        }
+        return normalizeOverlayCorner(rule.overlayCorner);
+    }
+
+    public static String normalizeOverlayCorner(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "top_right";
+        }
+        return switch (raw.trim().toLowerCase().replace('-', '_')) {
+            case "top_left", "tl" -> "top_left";
+            case "bottom_left", "bl" -> "bottom_left";
+            case "bottom_right", "br" -> "bottom_right";
+            default -> "top_right";
+        };
     }
 
     public static boolean hasLoadedRules() {

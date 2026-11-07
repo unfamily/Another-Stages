@@ -65,6 +65,10 @@ public final class AsConfig {
             .comment("Client mimic appearance for stage_block.")
             .define("block_appearance", true);
 
+    public static final ModConfigSpec.BooleanValue MIXIN_GUI_SLOTS = BUILDER
+            .comment("Gate AbstractContainerMenu.clicked for stage_gui blocked slots/items.")
+            .define("gui_slots", true);
+
     static {
         BUILDER.pop();
     }
@@ -115,6 +119,10 @@ public final class AsConfig {
 
     public static boolean mixinBlockAppearance() {
         return loaded(MIXIN_BLOCK_APPEARANCE, true);
+    }
+
+    public static boolean mixinGuiSlots() {
+        return loaded(MIXIN_GUI_SLOTS, true);
     }
 
     private static boolean loaded(ModConfigSpec.BooleanValue value, boolean defaultIfUnloaded) {

@@ -11,11 +11,13 @@
     "ItemCombinerMenuResultAccessor",
     "CrafterBlockMixin",
     "CampfireBlockEntityMixin",
-    "ServerPlaceRecipeMixin"
+    "ServerPlaceRecipeMixin",
+    "AbstractContainerMenuClickedMixin"
   ],
   "client": [
     "BlockAppearanceMixin",
-    "ItemStackHoverNameMixin"
+    "ItemStackHoverNameMixin",
+    "ItemModelResolverMixin"
   ],
   "minVersion": "0.8"
 }

@@ -14,6 +14,7 @@ public final class AnotherStagesBinding {
     public final ItemRestrictionManager items = new ItemRestrictionManager();
     public final RecipeRestrictionManager recipes = new RecipeRestrictionManager();
     public final BlockRestrictionManager blocks = new BlockRestrictionManager();
+    public final GuiRestrictionManager guis = new GuiRestrictionManager();
 
     private AnotherStagesBinding() {}
 

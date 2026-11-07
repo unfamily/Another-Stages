@@ -9,6 +9,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.unfamily.anotherstages.block.StageBlockBootstrap;
 import net.unfamily.anotherstages.config.AsConfig;
+import net.unfamily.anotherstages.gui.StageGuiBootstrap;
 import net.unfamily.anotherstages.item.StageItemBootstrap;
 import net.unfamily.anotherstages.network.AsNetworking;
 import net.unfamily.anotherstages.owner.AsAttachmentTypes;
@@ -25,10 +26,11 @@ public class AnotherStages {
         AsAttachmentTypes.register(modEventBus);
         modEventBus.addListener(AsNetworking::register);
         AsNetworking.installHooks();
-        // Install order builds reload chain: Library <- items <- recipes <- blocks <- kube soft-reload (outer)
+        // Install order builds reload chain: Library <- items <- recipes <- blocks <- guis <- kube soft-reload (outer)
         StageItemBootstrap.install();
         StageRecipeBootstrap.install();
         StageBlockBootstrap.install();
+        StageGuiBootstrap.install();
         net.unfamily.anotherstages.kubejs.KubejsStageSoftReload.install();
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             net.unfamily.anotherstages.client.StageItemClientSetup.register(modEventBus);

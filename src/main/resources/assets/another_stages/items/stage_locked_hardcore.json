@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "another_stages:item/stage_locked_hardcore"
+  }
+}

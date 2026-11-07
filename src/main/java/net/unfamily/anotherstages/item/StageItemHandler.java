@@ -579,6 +579,9 @@ public class StageItemHandler {
                     // hide_item_name defaults to true (Unfamiliar Item) when omitted
                     rule.hideItemName = !ruleObj.has("hide_item_name")
                             || ruleObj.get("hide_item_name").getAsBoolean();
+                    if (ruleObj.has("hidden_item_name") && ruleObj.get("hidden_item_name").isJsonPrimitive()) {
+                        rule.hiddenItemName = ruleObj.get("hidden_item_name").getAsString();
+                    }
                     // Recipe-viewer presentation: overlay (default) | hardcore | hide
                     rule.recipeViewer = parseRecipeViewer(ruleObj);
                     expandOtherCaseAll(rule.otherCase);
@@ -987,10 +990,18 @@ public class StageItemHandler {
         /** When true, default item tooltips are cleared before custom ones are added. */
         public boolean hideDefaultTooltips = false;
         /**
-         * When true (default), replace the display name with Unfamiliar Item / Fish while the rule
-         * is active and {@code recipe_viewer} is overlay or hardcore.
+         * When true (default), replace the display name with Unfamiliar Item / Fish (or
+         * {@link #hiddenItemName} / {@link #hiddenItemNameComponent}) while the rule is active
+         * and {@code recipe_viewer} is overlay or hardcore.
          */
         public boolean hideItemName = true;
+        /**
+         * Optional custom hidden display name (lang key or literal), same rules as tooltip strings.
+         * Used when {@link #hideItemName} is true; empty = default Unfamiliar Item/Fish.
+         */
+        public String hiddenItemName = "";
+        /** KubeJS Component override for the hidden display name (takes priority over the string). */
+        public net.minecraft.network.chat.Component hiddenItemNameComponent = null;
         /**
          * Recipe-viewer / client presentation when this rule is active:
          * {@code overlay} (default), {@code hardcore}, {@code hide}.

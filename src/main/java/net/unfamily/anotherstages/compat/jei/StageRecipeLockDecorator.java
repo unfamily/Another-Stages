@@ -16,14 +16,16 @@ import net.unfamily.anotherstages.recipe.StageRecipeRule;
 import java.util.List;
 
 /**
- * Draws a lock on the recipe arrow/process area and appends stage lock tooltips.
+ * Red wash over the recipe layout plus a hardcore-style lock badge in a configurable corner.
  *
  * @param <T> JEI recipe type (typically {@link RecipeHolder})
  */
 public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorator<T> {
     public static final StageRecipeLockDecorator<Object> INSTANCE = new StageRecipeLockDecorator<>();
 
-    private static final int LOCK_SIZE = 16;
+    /** On-screen badge size (texture is 24 lock / 32 fish, scaled into this box). */
+    private static final int BADGE_SIZE = 16;
+    private static final int PAD = 1;
 
     private StageRecipeLockDecorator() {}
 
@@ -40,10 +42,16 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
         if (StageRecipeRvHelper.modeFor(recipeId, holder) != StageRecipeRvHelper.Mode.OVERLAY) {
             return;
         }
-        int[] box = lockBox(recipeCategory);
+        int width = Math.max(BADGE_SIZE, recipeCategory.getWidth());
+        int height = Math.max(BADGE_SIZE, recipeCategory.getHeight());
+        guiGraphics.fill(0, 0, width, height, StageRecipeRvHelper.OVERLAY_TINT);
+
+        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder);
+        int[] box = StageRecipeRvHelper.lockBox(width, height, BADGE_SIZE, PAD, corner);
         RenderPipeline pipeline = RenderPipelines.GUI_TEXTURED;
         Identifier texture = StageRecipeRvHelper.lockTexture();
-        guiGraphics.blit(pipeline, texture, box[0], box[1], 0f, 0f, LOCK_SIZE, LOCK_SIZE, LOCK_SIZE, LOCK_SIZE);
+        int texSize = StageRecipeRvHelper.lockTextureSize();
+        guiGraphics.blit(pipeline, texture, box[0], box[1], 0f, 0f, BADGE_SIZE, BADGE_SIZE, texSize, texSize);
     }
 
     @Override
@@ -69,14 +77,16 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             }
         }
 
-        int[] box = lockBox(recipeCategory);
-        boolean overLock = mouseX >= box[0] && mouseX < box[0] + LOCK_SIZE
-                && mouseY >= box[1] && mouseY < box[1] + LOCK_SIZE;
+        int width = Math.max(BADGE_SIZE, recipeCategory.getWidth());
+        int height = Math.max(BADGE_SIZE, recipeCategory.getHeight());
+        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder);
+        int[] box = StageRecipeRvHelper.lockBox(width, height, BADGE_SIZE, PAD, corner);
+        boolean overLock = mouseX >= box[0] && mouseX < box[0] + BADGE_SIZE
+                && mouseY >= box[1] && mouseY < box[1] + BADGE_SIZE;
 
         if (hideDefault) {
             tooltip.clear();
         } else if (!overLock) {
-            // Only force stage tips when hovering the lock (unless clearing defaults)
             boolean anyCustom = false;
             for (StageRecipeRule rule : overlayRules) {
                 if (StageRecipeRvHelper.hasCustomTooltips(rule)) {
@@ -118,15 +128,5 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
                         "tooltip.another_stages.recipe_locked_stage", String.join(", ", stages)));
             }
         }
-    }
-
-    /** Lock drawn near the process arrow (center-right of the category layout). */
-    private static int[] lockBox(IRecipeCategory<?> category) {
-        int width = Math.max(LOCK_SIZE, category.getWidth());
-        int height = Math.max(LOCK_SIZE, category.getHeight());
-        // Crafting arrow sits near x=61; approximate center-right for other categories
-        int x = Math.max(0, Math.min(width - LOCK_SIZE, (width * 2) / 3 - LOCK_SIZE / 2));
-        int y = Math.max(0, (height - LOCK_SIZE) / 2);
-        return new int[]{x, y};
     }
 }

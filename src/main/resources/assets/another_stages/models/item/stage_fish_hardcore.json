@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "another_stages:stage_fish_hardcore"
+  }
+}

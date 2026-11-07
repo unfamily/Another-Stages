@@ -28,6 +28,6 @@ public abstract class ItemStackHoverNameMixin {
         if (self.isEmpty() || !StageItemRvHelper.shouldHideItemName(self.getItem())) {
             return;
         }
-        cir.setReturnValue(StageItemRvHelper.unfamiliarName());
+        cir.setReturnValue(StageItemRvHelper.hiddenDisplayName(self.getItem()));
     }
 }

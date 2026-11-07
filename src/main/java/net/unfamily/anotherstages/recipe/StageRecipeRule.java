@@ -19,6 +19,11 @@ public final class StageRecipeRule {
      * {@code overlay} (default) or {@code hide}.
      */
     public String recipeViewer = "overlay";
+    /**
+     * JEI overlay badge corner when {@link #recipeViewer} is overlay:
+     * {@code top_left}, {@code top_right} (default), {@code bottom_left}, {@code bottom_right}.
+     */
+    public String overlayCorner = "top_right";
     /** Optional custom tooltip lines (lang key or literal). */
     public List<String> tooltips = new ArrayList<>();
     /** When true, clear JEI recipe tooltips before appending custom / stage lock tips. */

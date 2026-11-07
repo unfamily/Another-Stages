@@ -21,5 +21,7 @@
   "tooltip.another_stages.recipe_locked_stage": "Ricetta bloccata fino allo stage: %s",
   "item.another_stages.unfamiliar_item": "Oggetto Sconosciuto",
   "item.another_stages.unfamiliar_fish": "Pesce Sconosciuto",
+  "message.another_stages.gui_blocked": "Questo menu è bloccato da uno stage",
+  "config.another_stages.option.mixins.gui_slots": "Gate slot GUI",
   "commands.another_stages.kubejs_stages_reloaded": "Restrizioni Another Stages da KubeJS ricaricate (soft reload di server_scripts)."
 }

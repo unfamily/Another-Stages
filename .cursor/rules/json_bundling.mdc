@@ -1,0 +1,14 @@
+---
+description: Prefer bundled datapack JSON (one file, many restrictions)
+alwaysApply: true
+---
+
+# Datapack JSON bundling
+
+For Another Stages datapack restrictions (`stage_item`, `stage_recipe`, `stage_block`, `stage_gui`):
+
+- Prefer **one JSON file** with a long `restrictions` array covering many gated things.
+- Do not default to one file per item/recipe/menu unless the packdev asks for that.
+- Multiple files remain valid; bundling is the packdev convention, not a hard loader limit.
+
+KubeJS managers stay as many fluent `restrict()` calls in scripts (different medium).

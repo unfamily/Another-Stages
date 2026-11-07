@@ -91,6 +91,31 @@ public final class RecipeRestrictionManager {
             return this;
         }
 
+        /**
+         * JEI overlay badge corner: {@code top_left}, {@code top_right} (default),
+         * {@code bottom_left}, {@code bottom_right}.
+         */
+        public RecipeRestrictBuilder overlayCorner(String corner) {
+            rule.overlayCorner = StageRecipeHandler.normalizeOverlayCorner(corner);
+            return this;
+        }
+
+        public RecipeRestrictBuilder overlayTopLeft() {
+            return overlayCorner("top_left");
+        }
+
+        public RecipeRestrictBuilder overlayTopRight() {
+            return overlayCorner("top_right");
+        }
+
+        public RecipeRestrictBuilder overlayBottomLeft() {
+            return overlayCorner("bottom_left");
+        }
+
+        public RecipeRestrictBuilder overlayBottomRight() {
+            return overlayCorner("bottom_right");
+        }
+
         public RecipeRestrictBuilder tooltip(Component component) {
             if (component != null) {
                 rule.componentTooltips.add(component);
@@ -120,6 +145,7 @@ public final class RecipeRestrictionManager {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
             parts.add(rule.recipeViewer);
+            parts.add(rule.overlayCorner);
             parts.add(String.join(",", rule.recipes));
             parts.add(String.join(",", rule.recipeTypes));
             parts.add(String.join(",", rule.outputs));
