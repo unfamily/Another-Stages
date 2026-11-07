@@ -27,7 +27,33 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    maven { url = 'https://maven.ftb.dev/releases' }
+    maven {
+        url = 'https://www.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+    maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me'
+    }
+    maven {
+        name = 'Architectury'
+        url = 'https://maven.architectury.dev'
+        content { includeGroup 'dev.architectury' }
+    }
+    maven {
+        name = 'Latvian'
+        url = 'https://maven.latvian.dev/releases'
+        content {
+            includeGroup 'dev.latvian.mods'
+            includeGroup 'dev.latvian.apps'
+        }
+    }
+    maven {
+        name = 'JitPack'
+        url = 'https://jitpack.io'
+        content { includeGroup 'com.github.rtyley' }
+    }
 }
 
 base {
@@ -111,27 +137,114 @@ configurations {
 }
 
 dependencies {
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    // Required: Iskandert's Library (local build preferred)
+    def iskaLibJar = file('../Iskandert-Library/build/libs/iska_lib-1.14.0.0.0.jar')
+    if (!iskaLibJar.exists()) {
+        iskaLibJar = file('libs/iska_lib-1.14.0.0.0.jar')
+    }
+    if (iskaLibJar.exists()) {
+        implementation files(iskaLibJar)
+        localRuntime files(iskaLibJar)
+    } else {
+        throw new GradleException('Missing local iska_lib jar (build Iskandert-Library or place jar in libs/)')
+    }
 
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
+    // Required: Another Config Manager (local build preferred)
+    def acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0.jar')
+    if (!acmJar.exists()) {
+        acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0-neoforge-26.1.2.jar')
+    }
+    if (!acmJar.exists()) {
+        acmJar = file('libs/another_config_manager-1.0.0.0.0.jar')
+    }
+    if (acmJar.exists()) {
+        implementation files(acmJar)
+        localRuntime files(acmJar)
+    } else {
+        throw new GradleException('Missing local another_config_manager jar')
+    }
 
-    // Example mod dependency using a file as dependency
-    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
+    // Optional local mods (runtime for IDE testing; not required to compile core).
+    // Prefer newest jar per mod id — avoid loading two versions of the same mod.
+    def pickFirstExisting = { List paths ->
+        for (String path : paths) {
+            def jar = file(path)
+            if (jar.exists()) {
+                return jar
+            }
+        }
+        return null
+    }
+    def optionalLocal = [
+            pickFirstExisting([
+                    '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.0.1-neoforge-26.1.2.jar',
+                    '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.0.0-neoforge-26.1.2.jar',
+            ]),
+            pickFirstExisting([
+                    '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.0.0-neoforge-26.1.2.jar',
+            ]),
+            pickFirstExisting([
+                    '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.0.1-neoforge-26.1.2.jar',
+                    '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.0.0-neoforge-26.1.2.jar',
+            ]),
+    ]
+    optionalLocal.findAll { it != null }.each { jar ->
+        localRuntime files(jar)
+    }
 
-    // Example project dependency using a sister or child project:
-    // implementation project(":myproject")
+    // Bridge + textures stack (Titanium → Replication; AE2; Fusion CT)
+    localRuntime "curse.maven:titanium-287342:${titanium_file_id}"
+    localRuntime "curse.maven:replication-638351:${replication_file_id}"
+    localRuntime "curse.maven:applied-energistics-2-223794:${ae2_file_id}"
+    localRuntime "curse.maven:guideme-1173950:${guideme_file_id}"
+    localRuntime "curse.maven:fusion-connected-textures-854949:${fusion_file_id}"
 
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+    // Soft runtime deps often pulled by Library integrations during local runs
+    localRuntime "dev.ftb.mods:ftb-library-neoforge:26.1.2.7"
+    localRuntime "dev.ftb.mods:ftb-teams-neoforge:26.1.2.4"
+
+    // Recipe viewers — compile APIs always; one localRuntime via runtime_itemlist_mod
+    def itemListMod = findProperty('runtime_itemlist_mod') ?: 'jei'
+    compileOnly "curse.maven:jei-238222:${jei_file_id}"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}"
+    compileOnly "dev.architectury:architectury-neoforge:${architectury_version}"
+    compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
+    // EMI predisposed (no stable 26.1.2 yet)
+    compileOnly "curse.maven:${emi_mod_maven}:${emi_file_id}"
+
+    if (itemListMod == 'jei') {
+        localRuntime "curse.maven:jei-238222:${jei_file_id}"
+    } else if (itemListMod == 'rei') {
+        localRuntime "curse.maven:roughly-enough-items-310111:${rei_curse_file}"
+        localRuntime "curse.maven:architectury-api-419699:${architectury_curse_file}"
+        localRuntime "curse.maven:cloth-config-348521:${cloth_config_curse_file}"
+    } else if (itemListMod == 'emi') {
+        // Predisposed — enable when a usable 26.1.2 EMI artifact exists
+        localRuntime "curse.maven:${emi_mod_maven}:${emi_file_id}"
+    }
+    // itemListMod == 'none' → compileOnly only
+
+    // Fast* — compile for dedicated mixins; runtime so they load in client runs
+    compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
+    compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
+    localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
+    localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
+    localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
+
+    // KubeJS — compile API from Latvian Maven; CurseMaven runtimes (Rhino + BAT required)
+    compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
+    if (configurations.findByName('interfaceInjectionData') != null) {
+        interfaceInjectionData "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
+    }
+    localRuntime "curse.maven:kubejs-238086:${kubejs_file_id}"
+    localRuntime "curse.maven:rhino-416294:${rhino_file_id}"
+    localRuntime "curse.maven:better-advanced-tooltips-1637623:${bat_file_id}"
+    // Transitive runtime libs from KubeJS POM (not on CurseMaven)
+    localRuntime "dev.latvian.apps:tiny-java-server:1.0.0-build.45"
+    localRuntime "com.github.rtyley:animated-gif-lib-for-java:animated-gif-lib-1.7"
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.7:processor'
+    implementation 'io.github.llamalad7:mixinextras-neoforge:0.5.5'
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -175,6 +288,18 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs.addAll(
+            '-AoutRefMapFile=' + layout.buildDirectory.file("${mod_id}.refmap.json").get().asFile.absolutePath,
+            '-Amixin.configs=' + mod_id + '.mixins.json'
+    )
+}
+
+tasks.named('jar', Jar).configure {
+    def mid = project.mod_id
+    from(layout.buildDirectory.file("${mid}.refmap.json")) {
+        rename { "${mid}.refmap.json" }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.

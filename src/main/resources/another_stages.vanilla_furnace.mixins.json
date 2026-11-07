@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "net.unfamily.anotherstages.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "refmap": "another_stages.refmap.json",
+  "plugin": "net.unfamily.anotherstages.mixin.compat.AsCompatMixinPlugin",
+  "mixins": [
+    "AbstractFurnaceBlockEntityMixin"
+  ],
+  "minVersion": "0.8"
+}

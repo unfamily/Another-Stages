@@ -1,0 +1,55 @@
+package net.unfamily.anotherstages.mixin.compat;
+
+import net.neoforged.fml.loading.LoadingModList;
+import org.objectweb.asm.tree.ClassNode;
+import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
+import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+
+import java.util.List;
+import java.util.Set;
+
+/** Applies Fast* mixins only when the corresponding mod is present. */
+public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
+    @Override
+    public void onLoad(String mixinPackage) {}
+
+    @Override
+    public String getRefMapperConfig() {
+        return null;
+    }
+
+    @Override
+    public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        String lower = mixinClassName == null ? "" : mixinClassName.toLowerCase();
+        if (lower.contains("fastbench")) {
+            return isLoaded("fastbench");
+        }
+        if (lower.contains("fastfurnace") && lower.contains("compat")) {
+            // Dedicated FastFurnace gate (MixinAbstractFurnaceBlockEntity.getRecipe)
+            return isLoaded("fastfurnace");
+        }
+        // Vanilla furnace CachedCheck redirect fights FastFurnace's own redirect — skip when FF present
+        if (lower.contains("abstractfurnaceblockentitymixin")) {
+            return !isLoaded("fastfurnace");
+        }
+        return true;
+    }
+
+    private static boolean isLoaded(String modId) {
+        return LoadingModList.get().getModFileById(modId) != null;
+    }
+
+    @Override
+    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
+
+    @Override
+    public List<String> getMixins() {
+        return null;
+    }
+
+    @Override
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+
+    @Override
+    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+}

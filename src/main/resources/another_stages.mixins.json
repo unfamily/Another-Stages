@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "package": "net.unfamily.anotherstages.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "refmap": "another_stages.refmap.json",
+  "mixins": [
+    "CraftingMenuMixin",
+    "StonecutterMenuMixin",
+    "SmithingMenuMixin",
+    "ItemCombinerMenuAccessor",
+    "ItemCombinerMenuResultAccessor",
+    "CrafterBlockMixin",
+    "CampfireBlockEntityMixin",
+    "ServerPlaceRecipeMixin"
+  ],
+  "client": [
+    "BlockAppearanceMixin"
+  ],
+  "minVersion": "0.8"
+}

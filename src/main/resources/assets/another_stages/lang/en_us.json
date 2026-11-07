@@ -1,1 +1,7 @@
-{}
+{
+  "another_stages.configuration.title": "Another Stages",
+  "another_stages.configuration.section.another_stages.common.toml": "Another Stages",
+  "another_stages.configuration.section.another_stages.common.toml.title": "Another Stages",
+  "another_stages.configuration.logging": "Logging",
+  "another_stages.configuration.enabled": "Enable logging"
+}
