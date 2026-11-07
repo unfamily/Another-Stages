@@ -53,6 +53,24 @@ public final class StageItemClientEvents {
                 event.getToolTip().add(resolveTooltip(tip.trim()));
             }
         }
+
+        if (event.getEntity() != null && event.getEntity().level() != null) {
+            var active = StageItemHandler.findActiveRules(
+                    event.getEntity(), event.getEntity().level(), stack.getItem());
+            if (!active.isEmpty()) {
+                String mode = StageItemHandler.rvMode(active.getFirst());
+                if (!"none".equals(mode) && !"hide".equals(mode)) {
+                    String stageHint = StageItemRvHelper.firstStageHint(stack.getItem());
+                    if (!stageHint.isBlank()) {
+                        event.getToolTip().add(Component.translatable(
+                                "tooltip.another_stages.item_locked_stage", stageHint));
+                    } else {
+                        event.getToolTip().add(Component.translatable(
+                                "tooltip.another_stages.item_locked"));
+                    }
+                }
+            }
+        }
     }
 
     private static Component resolveTooltip(String raw) {

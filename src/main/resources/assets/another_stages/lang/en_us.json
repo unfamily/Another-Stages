@@ -2,6 +2,19 @@
   "another_stages.configuration.title": "Another Stages",
   "another_stages.configuration.section.another_stages.common.toml": "Another Stages",
   "another_stages.configuration.section.another_stages.common.toml.title": "Another Stages",
-  "another_stages.configuration.logging": "Logging",
-  "another_stages.configuration.enabled": "Enable logging"
+  "config.another_stages.section.logging": "Logging",
+  "config.another_stages.option.logging.enabled": "Enable logging",
+  "config.another_stages.section.mixins": "Mixins",
+  "config.another_stages.option.mixins.crafting": "Crafting menu",
+  "config.another_stages.option.mixins.furnace": "Furnace",
+  "config.another_stages.option.mixins.stonecutter": "Stonecutter",
+  "config.another_stages.option.mixins.smithing": "Smithing",
+  "config.another_stages.option.mixins.crafter": "Crafter",
+  "config.another_stages.option.mixins.campfire": "Campfire",
+  "config.another_stages.option.mixins.recipe_book_place": "Recipe book place",
+  "config.another_stages.option.mixins.fastbench": "Fast Workbench",
+  "config.another_stages.option.mixins.fastfurnace": "Fast Furnace",
+  "config.another_stages.option.mixins.block_appearance": "Block appearance (client)",
+  "tooltip.another_stages.item_locked": "Locked by stage",
+  "tooltip.another_stages.item_locked_stage": "Locked until stage: %s"
 }

@@ -9,6 +9,7 @@ import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,6 +44,9 @@ public abstract class StonecutterMenuMixin {
 
     @Inject(method = "setupResultSlot", at = @At("TAIL"), remap = false)
     private void anotherStages$gateResult(int index, CallbackInfo ci) {
+        if (!AsConfig.mixinStonecutter()) {
+            return;
+        }
         RecipeHolder<?> used = this.resultContainer.getRecipeUsed();
         if (used == null || anotherStages$player == null) {
             return;

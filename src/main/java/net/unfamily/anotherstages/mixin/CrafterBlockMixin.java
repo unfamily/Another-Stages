@@ -7,6 +7,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.CrafterBlock;
 import net.minecraft.world.level.block.entity.CrafterBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +31,7 @@ public abstract class CrafterBlockMixin {
             ServerLevel levelArg,
             BlockPos pos) {
         Optional<RecipeHolder<CraftingRecipe>> recipe = CrafterBlock.getPotentialResults(level, input);
-        if (recipe.isEmpty()) {
+        if (!AsConfig.mixinCrafter() || recipe.isEmpty()) {
             return recipe;
         }
         if (!(level.getBlockEntity(pos) instanceof CrafterBlockEntity be)) {

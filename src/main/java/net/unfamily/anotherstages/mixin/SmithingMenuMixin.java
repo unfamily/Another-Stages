@@ -4,6 +4,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.SmithingMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,6 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class SmithingMenuMixin {
     @Inject(method = "createResult", at = @At("TAIL"), remap = false)
     private void anotherStages$gateSmithing(CallbackInfo ci) {
+        if (!AsConfig.mixinSmithing()) {
+            return;
+        }
         ResultContainer resultSlots = ((ItemCombinerMenuResultAccessor) this).anotherStages$getResultSlots();
         RecipeHolder<?> used = resultSlots.getRecipeUsed();
         if (used == null) {

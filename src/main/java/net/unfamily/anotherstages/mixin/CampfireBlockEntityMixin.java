@@ -10,6 +10,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.block.entity.CampfireBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +29,9 @@ public abstract class CampfireBlockEntityMixin {
             @Nullable LivingEntity sourceEntity,
             ItemStack placeItem,
             CallbackInfoReturnable<Boolean> cir) {
+        if (!AsConfig.mixinCampfire()) {
+            return;
+        }
         Optional<RecipeHolder<CampfireCookingRecipe>> recipe = serverLevel
                 .recipeAccess()
                 .getRecipeFor(
@@ -59,7 +63,9 @@ public abstract class CampfireBlockEntityMixin {
                     CampfireBlockEntity entity,
                     RecipeManager.CachedCheck<SingleRecipeInput, CampfireCookingRecipe> recipeCache) {
         Optional<RecipeHolder<T>> recipe = check.getRecipeFor(input, level);
-        if (recipe.isPresent() && RecipeStageGate.isBlockedForMachine(recipe.get().id(), entity, level)) {
+        if (AsConfig.mixinCampfire()
+                && recipe.isPresent()
+                && RecipeStageGate.isBlockedForMachine(recipe.get().id(), entity, level)) {
             return Optional.empty();
         }
         return recipe;

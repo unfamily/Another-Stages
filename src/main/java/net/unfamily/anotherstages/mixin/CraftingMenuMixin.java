@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.inventory.RecipeCraftingHolder;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,7 +24,8 @@ public abstract class CraftingMenuMixin {
                     remap = false))
     private static boolean anotherStages$gateCraftingResult(
             RecipeCraftingHolder result, ServerPlayer player, RecipeHolder<?> holder) {
-        if (RecipeStageGate.isBlockedForPlayer(holder.id(), player, player.level())) {
+        if (AsConfig.mixinCrafting()
+                && RecipeStageGate.isBlockedForPlayer(holder.id(), player, player.level())) {
             return false;
         }
         return result.setRecipeUsed(player, holder);

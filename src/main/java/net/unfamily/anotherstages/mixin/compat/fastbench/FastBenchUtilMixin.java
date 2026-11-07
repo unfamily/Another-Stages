@@ -12,6 +12,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -31,6 +32,9 @@ public abstract class FastBenchUtilMixin {
             ResultContainer result,
             Operation<Void> original) {
         original.call(level, player, inv, result);
+        if (!AsConfig.mixinFastbench()) {
+            return;
+        }
         RecipeHolder<?> used = result.getRecipeUsed();
         if (used != null
                 && player instanceof ServerPlayer
@@ -53,6 +57,9 @@ public abstract class FastBenchUtilMixin {
             ResultContainer result,
             FastBenchUtil.OutputMover mover,
             CallbackInfoReturnable<ItemStack> cir) {
+        if (!AsConfig.mixinFastbench()) {
+            return;
+        }
         RecipeHolder<?> used = result.getRecipeUsed();
         if (used != null
                 && player instanceof ServerPlayer

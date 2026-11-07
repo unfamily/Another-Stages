@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.anotherstages.block.StageBlockHandler;
 import net.unfamily.anotherstages.block.StageBlockRule;
+import net.unfamily.anotherstages.config.AsConfig;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -32,6 +33,9 @@ public abstract class BlockAppearanceMixin {
             @Nullable BlockState queryState,
             @Nullable BlockPos queryPos,
             CallbackInfoReturnable<BlockState> cir) {
+        if (!AsConfig.mixinBlockAppearance()) {
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) {
             return;

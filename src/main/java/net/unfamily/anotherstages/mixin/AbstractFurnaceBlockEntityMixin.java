@@ -8,6 +8,7 @@ import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,7 +37,9 @@ public abstract class AbstractFurnaceBlockEntityMixin {
             BlockState state,
             AbstractFurnaceBlockEntity entity) {
         Optional<RecipeHolder<T>> recipe = check.getRecipeFor(input, level);
-        if (recipe.isPresent() && RecipeStageGate.isBlockedForMachine(recipe.get().id(), entity, level)) {
+        if (AsConfig.mixinFurnace()
+                && recipe.isPresent()
+                && RecipeStageGate.isBlockedForMachine(recipe.get().id(), entity, level)) {
             return Optional.empty();
         }
         return recipe;

@@ -573,7 +573,13 @@ public class StageItemHandler {
                     }
                     rule.hideDefaultTooltips = ruleObj.has("hide_default_tooltips")
                             && ruleObj.get("hide_default_tooltips").getAsBoolean();
-                    
+                    // Recipe-viewer presentation: overlay (default) | hide | partial | none
+                    if (ruleObj.has("rv") && ruleObj.get("rv").isJsonPrimitive()) {
+                        rule.rv = ruleObj.get("rv").getAsString().trim().toLowerCase();
+                    } else if (ruleObj.has("viewer") && ruleObj.get("viewer").isJsonPrimitive()) {
+                        rule.rv = ruleObj.get("viewer").getAsString().trim().toLowerCase();
+                    }
+
                     restriction.restrictions.add(rule);
                 }
             }
@@ -810,8 +816,78 @@ public class StageItemHandler {
         return matched;
     }
 
+    /**
+     * Rules that currently apply for this player/level (stage gates evaluated).
+     * Works for {@link ServerPlayer} and client {@link Player} when stages are synced.
+     */
+    public static List<StageItemRule> findActiveRules(Player player, Level level, Item item) {
+        List<StageItemRule> active = new ArrayList<>();
+        if (player == null || level == null || item == null) {
+            return active;
+        }
+        for (StageItemRule rule : findRulesForItem(item)) {
+            if (ruleAppliesForPlayer(rule, player, level)) {
+                active.add(rule);
+            }
+        }
+        return active;
+    }
+
+    /** Whether a rule's stage conditions currently match the player. */
+    public static boolean ruleAppliesForPlayer(StageItemRule rule, Player player, Level level) {
+        if (rule == null || player == null || level == null) {
+            return false;
+        }
+        if (player instanceof ServerPlayer serverPlayer) {
+            return checkStageConditions(rule, serverPlayer, level);
+        }
+        // Client path: AND/OR only (DEF_* needs full server if-branches)
+        if (rule.stages == null || rule.stages.isEmpty()) {
+            return true;
+        }
+        boolean and = !"OR".equalsIgnoreCase(rule.stagesLogic);
+        if (and) {
+            for (StageCondition condition : rule.stages) {
+                if (checkSingleStageConditionClient(condition, player, level) != condition.is) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        for (StageCondition condition : rule.stages) {
+            if (checkSingleStageConditionClient(condition, player, level) == condition.is) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean checkSingleStageConditionClient(StageCondition condition, Player player, Level level) {
+        // Library static checks are server-only; use synced client cache for RV / tooltips.
+        if ("world".equals(condition.stageType)) {
+            return net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(condition.stage);
+        }
+        if ("team".equals(condition.stageType)) {
+            return net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(condition.stage);
+        }
+        return net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(condition.stage);
+    }
+
     public static boolean hasLoadedRestrictions() {
         return !ITEM_RESTRICTIONS.isEmpty();
+    }
+
+    /** Normalized RV mode for a rule ({@code overlay}, {@code hide}, {@code partial}, {@code none}). */
+    public static String rvMode(StageItemRule rule) {
+        if (rule == null || rule.rv == null || rule.rv.isBlank()) {
+            return "overlay";
+        }
+        return switch (rule.rv.toLowerCase()) {
+            case "hide", "hidden" -> "hide";
+            case "partial", "generic" -> "partial";
+            case "none", "off", "false" -> "none";
+            default -> "overlay";
+        };
     }
 
     // Classes to represent JSON structures
@@ -844,6 +920,11 @@ public class StageItemHandler {
         public List<String> tooltips = new ArrayList<>();
         /** When true, default item tooltips are cleared before custom ones are added. */
         public boolean hideDefaultTooltips = false;
+        /**
+         * Recipe-viewer / client presentation when this rule is active:
+         * {@code overlay} (default), {@code hide}, {@code partial}, {@code none}.
+         */
+        public String rv = "overlay";
     }
     
     /**

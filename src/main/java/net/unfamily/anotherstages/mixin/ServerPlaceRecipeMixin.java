@@ -7,6 +7,7 @@ import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +31,8 @@ public abstract class ServerPlaceRecipeMixin {
             boolean useMaxItems,
             boolean allowDroppingItemsToClear,
             CallbackInfoReturnable<RecipeBookMenu.PostPlaceAction> cir) {
-        if (inventory.player instanceof ServerPlayer player
+        if (AsConfig.mixinRecipeBookPlace()
+                && inventory.player instanceof ServerPlayer player
                 && RecipeStageGate.isBlockedForPlayer(recipe.id(), player, player.level())) {
             cir.setReturnValue(RecipeBookMenu.PostPlaceAction.NOTHING);
         }
