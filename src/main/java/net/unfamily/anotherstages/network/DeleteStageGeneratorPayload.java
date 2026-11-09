@@ -13,8 +13,12 @@ import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
 import net.unfamily.anotherstages.stagegen.StageGenFileWriter;
 
-/** C2S: delete a restriction by category + id from the fixed JSON file. */
-public record DeleteStageGeneratorPayload(String category, String id) implements CustomPacketPayload {
+/**
+ * C2S: delete a restriction from the fixed export file.
+ * JSON uses silent {@code id}; Kube uses {@code kubeEntryIndex}.
+ */
+public record DeleteStageGeneratorPayload(String category, String id, int kubeEntryIndex)
+        implements CustomPacketPayload {
     public static final Type<DeleteStageGeneratorPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "delete_stage_generator"));
 
@@ -24,6 +28,8 @@ public record DeleteStageGeneratorPayload(String category, String id) implements
                     DeleteStageGeneratorPayload::category,
                     ByteBufCodecs.STRING_UTF8,
                     DeleteStageGeneratorPayload::id,
+                    ByteBufCodecs.VAR_INT,
+                    DeleteStageGeneratorPayload::kubeEntryIndex,
                     DeleteStageGeneratorPayload::new);
 
     @Override
@@ -42,8 +48,12 @@ public record DeleteStageGeneratorPayload(String category, String id) implements
         }
         try {
             RestrictionDraft.Category cat = RestrictionDraft.Category.valueOf(payload.category());
-            StageGenFileWriter.Result result = StageGenFileWriter.delete(player, cat, payload.id());
-            player.sendSystemMessage(result.message());
+            StageGenFileWriter.Result result =
+                    StageGenFileWriter.delete(player, cat, payload.id(), payload.kubeEntryIndex());
+            // Silent like save — only report failures.
+            if (!result.ok()) {
+                player.sendSystemMessage(result.message());
+            }
         } catch (Exception ex) {
             player.sendSystemMessage(Component.translatable(
                     "screen.another_stages.stage_generator.save.failed",

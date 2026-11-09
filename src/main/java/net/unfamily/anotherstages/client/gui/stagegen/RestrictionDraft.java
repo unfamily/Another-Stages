@@ -56,8 +56,14 @@ public final class RestrictionDraft {
 
     public Category category = Category.ITEM;
 
-    /** Stable id for file merge ({@code stagegen/<slug>}). */
+    /** Silent id for JSON merge only — never shown or edited in the GUI. */
     public String id = "";
+
+    /**
+     * Index of this draft inside the category Kube {@code //Entry N} file.
+     * {@code -1} = new entry not yet written.
+     */
+    public int kubeEntryIndex = -1;
 
     public String stagesLogic = "AND";
     public final List<StageRow> stages = new ArrayList<>();
@@ -116,6 +122,7 @@ public final class RestrictionDraft {
     public static RestrictionDraft createDefaults(Category category) {
         RestrictionDraft d = new RestrictionDraft();
         d.category = category == null ? Category.ITEM : category;
+        d.kubeEntryIndex = -1;
         d.ensureId();
         switch (d.category) {
             case ITEM -> {
@@ -200,6 +207,7 @@ public final class RestrictionDraft {
         JsonObject root = new JsonObject();
         root.addProperty("category", category.name());
         root.addProperty("id", id);
+        root.addProperty("kubeEntryIndex", kubeEntryIndex);
         root.addProperty("stagesLogic", stagesLogic);
         JsonArray stagesArr = new JsonArray();
         for (StageRow row : stages) {
@@ -259,6 +267,7 @@ public final class RestrictionDraft {
         d.stages.clear();
         d.category = Category.valueOf(root.get("category").getAsString());
         d.id = str(root, "id", "");
+        d.kubeEntryIndex = root.has("kubeEntryIndex") ? root.get("kubeEntryIndex").getAsInt() : -1;
         d.stagesLogic = str(root, "stagesLogic", "AND");
         if (root.has("stages") && root.get("stages").isJsonArray()) {
             for (JsonElement el : root.getAsJsonArray("stages")) {

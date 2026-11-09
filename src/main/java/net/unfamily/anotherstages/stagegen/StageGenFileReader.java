@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
+import net.unfamily.anotherstages.config.AsConfig;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,10 +15,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads Stage Generator drafts from fixed JSON files (Kube script parse is out of scope for v3 browse).
+ * Loads Stage Generator drafts from fixed JSON or KubeJS Entry-N files (by export preference).
  */
 public final class StageGenFileReader {
     private StageGenFileReader() {}
+
+    /** Open-GUI load: Kube when preferred, otherwise JSON. */
+    public static List<RestrictionDraft> loadAllForOpen() {
+        if (AsConfig.preferKubejs()) {
+            return StageGenKubeReader.loadAllKube();
+        }
+        return loadAllJson();
+    }
 
     public static List<RestrictionDraft> loadAllJson() {
         List<RestrictionDraft> out = new ArrayList<>();

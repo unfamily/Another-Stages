@@ -143,7 +143,7 @@ public final class AsNetworking {
                 player,
                 new StageGenPathInfoPayload(StageGenPaths.displayFirstDatapackRoot()));
         List<String> blobs = new ArrayList<>();
-        for (RestrictionDraft draft : StageGenFileReader.loadAllJson()) {
+        for (RestrictionDraft draft : StageGenFileReader.loadAllForOpen()) {
             blobs.add(draft.toJson().toString());
         }
         PacketDistributor.sendToPlayer(player, new StageGenSessionSyncS2CPayload(blobs));

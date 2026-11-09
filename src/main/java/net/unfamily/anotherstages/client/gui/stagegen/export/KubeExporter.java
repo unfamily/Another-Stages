@@ -5,17 +5,47 @@ import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
 import java.util.List;
 import java.util.Locale;
 
-/** Builds an {@code AnotherStagesEvents.restrictions} snippet for one restriction. */
+/**
+ * Builds KubeJS Stage Generator scripts in the canonical Entry-N file format
+ * (single {@code AnotherStagesEvents.restrictions} wrapper, no {@code .id()}).
+ */
 public final class KubeExporter {
+    private static final String WARNING_TOP =
+            "// # Warning! Don't Remove comments with # or this file can't be open by generator.\n"
+                    + "// # Dont' Remove This Line:\n";
+    private static final String WARNING_BOTTOM = "// # Dont' Remove This Line:\n";
+
     private KubeExporter() {}
 
-    public static String export(RestrictionDraft d) {
-        d.ensureId();
+    /** Full category file: warning + wrapper + {@code //Entry N} bodies. */
+    public static String exportFile(RestrictionDraft.Category category, List<RestrictionDraft> drafts) {
         StringBuilder sb = new StringBuilder();
-        sb.append("// stagegen:").append(d.id).append("\n");
-        sb.append("AnotherStagesEvents.restrictions(event => {\n");
+        sb.append(WARNING_TOP);
+        sb.append("AnotherStagesEvents.restrictions(event => {\n\n");
+        int index = 0;
+        if (drafts != null) {
+            for (RestrictionDraft d : drafts) {
+                if (d == null || d.category != category) {
+                    continue;
+                }
+                sb.append("  //Entry ").append(index).append("\n");
+                sb.append(exportEntryBody(d));
+                sb.append("\n");
+                index++;
+            }
+        }
+        sb.append("\n");
+        sb.append(WARNING_BOTTOM);
+        sb.append("})\n");
+        return sb.toString();
+    }
+
+    /**
+     * One entry body (indented), starting at {@code event.<mgr>.restrict()} — no wrapper, no {@code .id()}.
+     */
+    public static String exportEntryBody(RestrictionDraft d) {
+        StringBuilder sb = new StringBuilder();
         sb.append("  event.").append(manager(d.category)).append(".restrict()\n");
-        sb.append("    .id(").append(ExportUtil.jsString(d.id)).append(")\n");
         sb.append("    .").append(logicMethod(d.stagesLogic)).append("()\n");
         sb.append("    .stages([\n");
         for (RestrictionDraft.StageRow row : d.stages) {
@@ -30,9 +60,13 @@ public final class KubeExporter {
             case BLOCK -> appendBlock(sb, d);
             case GUI -> appendGui(sb, d);
         }
-        sb.append("})\n");
-        sb.append("// end-stagegen:").append(d.id).append("\n");
         return sb.toString();
+    }
+
+    /** @deprecated use {@link #exportEntryBody} / {@link #exportFile} */
+    @Deprecated
+    public static String export(RestrictionDraft d) {
+        return exportEntryBody(d);
     }
 
     private static String manager(RestrictionDraft.Category c) {

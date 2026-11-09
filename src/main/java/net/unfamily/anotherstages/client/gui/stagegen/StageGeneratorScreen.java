@@ -63,12 +63,6 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         STRING_ENTRY
     }
 
-    private enum MatcherKind {
-        ITEM,
-        TAG,
-        MOD
-    }
-
     private record AreaButton(String labelKey, RestrictionDraft.Category category) {}
 
     private static final List<AreaButton> HOME_AREAS = List.of(
@@ -88,14 +82,15 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     /** Parent list when on MATCHER_ENTRY (MATCHERS / EXCLUDE / INPUTS / BLOCKED_ITEMS). */
     private SubView matcherListParent = SubView.MATCHERS;
     private int editingMatcherIndex = -1;
-    private MatcherKind matcherKind = MatcherKind.ITEM;
+    /** Shop-style calibrator cycle: item id / #tags / @mod from ghost stack. */
+    private final List<String> matcherVariants = new ArrayList<>();
+    private int matcherVariantIndex = 0;
     private int editingStageIndex = -1;
     /** Parent list when on STRING_ENTRY (tooltips / recipes / menus / slots / …). */
     private SubView stringListParent = SubView.TOOLTIPS;
     private int editingStringIndex = -1;
 
     private @Nullable StageGenScrollList scrollList;
-    private @Nullable EditBox idBox;
     private @Nullable EditBox mimicBox;
     private @Nullable EditBox ticksBox;
     private @Nullable EditBox maxSlotsBox;
@@ -152,7 +147,6 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         }
         clearWidgets();
         scrollList = null;
-        idBox = null;
         mimicBox = null;
         ticksBox = null;
         maxSlotsBox = null;
@@ -212,7 +206,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private boolean showInventorySlots() {
-        return subView == SubView.MATCHER_ENTRY && matcherKind == MatcherKind.ITEM;
+        return subView == SubView.MATCHER_ENTRY;
     }
 
     private boolean acceptsGhostInCurrentView() {
@@ -221,9 +215,22 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
 
     private int contentBottom() {
         if (showInventorySlots()) {
-            return topPos + StageGeneratorMenu.GHOST_Y - 6;
+            // Calibrator ghost sits in the form row; reserve space above the player inv band.
+            return topPos + StageGeneratorMenu.PLAYER_INV_Y - 6;
         }
         return topPos + StageGeneratorMenu.BOTTOM_BAR_Y - 4;
+    }
+
+    private int matcherSlotX() {
+        return StageGeneratorMenu.GHOST_X;
+    }
+
+    private int matcherRightArrowX() {
+        return matcherSlotX() + StageGeneratorMenu.MATCHER_SLOT + StageGeneratorMenu.MATCHER_ARROW_GAP;
+    }
+
+    private int matcherEditBoxX() {
+        return matcherRightArrowX() + StageGeneratorMenu.MATCHER_ARROW + StageGeneratorMenu.MATCHER_ARROW_GAP;
     }
 
     private StageGenScrollList createList(int topY, int bottomY) {
@@ -572,8 +579,46 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             if (first.isBlank() || "(empty)".equals(first)) {
                 return;
             }
+        } else if (draft.kubeEntryIndex < 0) {
+            // Claim next Entry index before send so a second save replaces instead of appending.
+            int max = -1;
+            for (RestrictionDraft other : session().all()) {
+                if (other.category == draft.category && other.kubeEntryIndex > max) {
+                    max = other.kubeEntryIndex;
+                }
+            }
+            draft.kubeEntryIndex = max + 1;
         }
         ClientPacketDistributor.sendToServer(new SaveStageGeneratorPayload(draft.toJson().toString()));
+    }
+
+    /** Browse row label: first matcher / recipe target / menu — never the silent JSON id. */
+    private static String browseSummary(RestrictionDraft d) {
+        String m = firstMatcherId(d);
+        if (m != null && !m.isBlank()) {
+            return m;
+        }
+        if (!d.recipes.isEmpty() && d.recipes.get(0) != null && !d.recipes.get(0).isBlank()) {
+            return d.recipes.get(0);
+        }
+        if (!d.recipeTypes.isEmpty() && d.recipeTypes.get(0) != null && !d.recipeTypes.get(0).isBlank()) {
+            return d.recipeTypes.get(0);
+        }
+        if (!d.inputs.isEmpty() && d.inputs.get(0) != null && !d.inputs.get(0).isBlank()) {
+            return d.inputs.get(0);
+        }
+        if (!d.menus.isEmpty() && d.menus.get(0) != null && !d.menus.get(0).isBlank()) {
+            return d.menus.get(0);
+        }
+        if (!d.menuTypes.isEmpty() && d.menuTypes.get(0) != null && !d.menuTypes.get(0).isBlank()) {
+            return d.menuTypes.get(0);
+        }
+        for (RestrictionDraft.StageRow row : d.stages) {
+            if (row != null && row.id != null && !row.id.isBlank()) {
+                return row.type + ":" + row.id;
+            }
+        }
+        return "…";
     }
 
     private void buildBrowse() {
@@ -593,8 +638,8 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             list.addLabel("screen.another_stages.stage_generator.browse.empty");
         } else {
             for (RestrictionDraft d : filtered) {
-                String id = d.id == null || d.id.isBlank() ? "(no id)" : d.id;
-                if (!matchesSearch(id)) {
+                String label = browseSummary(d);
+                if (!matchesSearch(label)) {
                     continue;
                 }
                 shown++;
@@ -605,7 +650,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                     icon = StageGenIcons.stackForCategory(d.category);
                     glyph = null;
                 }
-                list.addBrowseRow(icon, glyph, Component.literal(id), st.reason(), st.ready(), () -> {
+                list.addBrowseRow(icon, glyph, Component.literal(label), st.reason(), st.ready(), () -> {
                     session().select(d);
                     subView = SubView.ENTRY_EDIT;
                     savedScroll = 0;
@@ -636,11 +681,18 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         if (d == null || d.category != session().filter()) {
             return;
         }
-        if (!AsConfig.preferKubejs()) {
-            ClientPacketDistributor.sendToServer(
-                    new DeleteStageGeneratorPayload(d.category.name(), d.id));
-        }
+        int deletedKubeIndex = d.kubeEntryIndex;
+        ClientPacketDistributor.sendToServer(
+                new DeleteStageGeneratorPayload(d.category.name(), d.id == null ? "" : d.id, deletedKubeIndex));
+        RestrictionDraft.Category cat = d.category;
         session().removeSelected();
+        if (AsConfig.preferKubejs() && deletedKubeIndex >= 0) {
+            for (RestrictionDraft other : session().all()) {
+                if (other.category == cat && other.kubeEntryIndex > deletedKubeIndex) {
+                    other.kubeEntryIndex--;
+                }
+            }
+        }
         savedScroll = 0;
         rebuild();
     }
@@ -661,14 +713,6 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             case GUI -> "screen.another_stages.stage_generator.editor.guis";
         };
         addFormLabel(FORM_LEFT, 8, FORM_WIDTH, titleKey);
-        if (st.ready()) {
-            addFormLabel(FORM_LEFT, 18, FORM_WIDTH, "screen.another_stages.stage_generator.complete.ready");
-        } else {
-            addFormLabel(FORM_LEFT, 18, FORM_WIDTH, st.reason());
-        }
-
-        addFormLabel(FORM_LEFT, 30, FORM_WIDTH, "screen.another_stages.stage_generator.field.id");
-        idBox = addFormBox(FORM_LEFT, 40, FORM_WIDTH, 12, draft.id, 128, v -> draft.id = v == null ? "" : v.trim());
 
         switch (draft.category) {
             case ITEM -> buildItemEntryFields(draft);
@@ -677,11 +721,18 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             case GUI -> buildGuiEntryFields(draft);
         }
 
+        if (!st.ready()) {
+            StringWidget incomplete = new StringWidget(FORM_WIDTH, 10, st.reason().copy()
+                    .withStyle(s -> s.withColor(0xCC4444)), font);
+            incomplete.setPosition(leftPos + FORM_LEFT, topPos + StageGeneratorMenu.BOTTOM_BAR_Y - 12);
+            addRenderableWidget(incomplete);
+        }
+
         addBottomButton(doneLabel(), this::navigateUp);
     }
 
     private void buildItemEntryFields(RestrictionDraft draft) {
-        int navY = 58;
+        int navY = 22;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -694,7 +745,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude", draft.exclude.size()),
                 () -> openSub(SubView.EXCLUDE));
 
-        int navY2 = 76;
+        int navY2 = 40;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.nav.cases"),
                 () -> openSub(SubView.CASES));
@@ -708,7 +759,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                     rebuild();
                 });
 
-        int row = 96;
+        int row = 60;
         addFormLabel(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.recipe_viewer");
         addFormCycle(formColX(1, 2), row, formColW(1, 2), 12,
                 Component.literal(draft.recipeViewer),
@@ -717,13 +768,13 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                     rebuild();
                 });
 
-        row = 112;
+        row = 76;
         addFormToggle(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.can_pickup_label",
                 () -> draft.canPickup, v -> draft.canPickup = v);
         addFormToggle(formColX(1, 2), row, formColW(1, 2), "screen.another_stages.stage_generator.field.hide_item_name_label",
                 () -> draft.hideItemName, v -> draft.hideItemName = v);
 
-        row = 132;
+        row = 96;
         addFormLabel(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.inventory_ticks");
         ticksBox = addFormBox(formColX(1, 2), row, formColW(1, 2), 12, String.valueOf(draft.inventoryTicks), 8, v -> {
             try {
@@ -734,7 +785,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void buildRecipeEntryFields(RestrictionDraft draft) {
-        int navY = 58;
+        int navY = 22;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -747,7 +798,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.recipes", draft.recipes.size()),
                 () -> openSub(SubView.RECIPES));
 
-        int navY2 = 76;
+        int navY2 = 40;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.table.open.recipe_types", draft.recipeTypes.size()),
                 () -> openSub(SubView.RECIPE_TYPES));
@@ -758,7 +809,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude_recipes", draft.excludeRecipes.size()),
                 () -> openSub(SubView.EXCLUDE_RECIPES));
 
-        int row = 96;
+        int row = 60;
         addFormButton(formColX(0, 2), row, formColW(0, 2), 14,
                 Component.translatable("screen.another_stages.stage_generator.table.open.tooltips", draft.tooltips.size()),
                 () -> openSub(SubView.TOOLTIPS));
@@ -771,7 +822,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void buildBlockEntryFields(RestrictionDraft draft) {
-        int navY = 58;
+        int navY = 22;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -784,21 +835,21 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude", draft.exclude.size()),
                 () -> openSub(SubView.EXCLUDE));
 
-        addFormLabel(FORM_LEFT, 78, FORM_WIDTH, "screen.another_stages.stage_generator.field.mimic");
-        mimicBox = addFormBox(FORM_LEFT, 88, FORM_WIDTH, 12, draft.mimic, 128, v -> draft.mimic = v == null ? "" : v.trim());
+        addFormLabel(FORM_LEFT, 42, FORM_WIDTH, "screen.another_stages.stage_generator.field.mimic");
+        mimicBox = addFormBox(FORM_LEFT, 52, FORM_WIDTH, 12, draft.mimic, 128, v -> draft.mimic = v == null ? "" : v.trim());
 
-        addFormToggle(formColX(0, 2), 108, formColW(0, 2), "screen.another_stages.stage_generator.field.camouflage",
+        addFormToggle(formColX(0, 2), 72, formColW(0, 2), "screen.another_stages.stage_generator.field.camouflage",
                 () -> draft.camouflage, v -> draft.camouflage = v);
-        addFormToggle(formColX(1, 2), 108, formColW(1, 2), "screen.another_stages.stage_generator.field.unbreakable",
+        addFormToggle(formColX(1, 2), 72, formColW(1, 2), "screen.another_stages.stage_generator.field.unbreakable",
                 () -> draft.unbreakable, v -> draft.unbreakable = v);
-        addFormToggle(formColX(0, 2), 128, formColW(0, 2), "screen.another_stages.stage_generator.field.stop_tick",
+        addFormToggle(formColX(0, 2), 92, formColW(0, 2), "screen.another_stages.stage_generator.field.stop_tick",
                 () -> draft.stopTick, v -> draft.stopTick = v);
-        addFormToggle(formColX(1, 2), 128, formColW(1, 2), "screen.another_stages.stage_generator.field.break_msg",
+        addFormToggle(formColX(1, 2), 92, formColW(1, 2), "screen.another_stages.stage_generator.field.break_msg",
                 () -> draft.breakMessageDefault, v -> draft.breakMessageDefault = v);
     }
 
     private void buildGuiEntryFields(RestrictionDraft draft) {
-        int navY = 58;
+        int navY = 22;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -811,7 +862,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.menus", draft.menus.size()),
                 () -> openSub(SubView.MENUS));
 
-        int navY2 = 76;
+        int navY2 = 40;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.table.open.blocked_slots", draft.blockedSlots.size()),
                 () -> openSub(SubView.BLOCKED_SLOTS));
@@ -819,13 +870,13 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.blocked_items", draft.blockedItems.size()),
                 () -> openSub(SubView.BLOCKED_ITEMS));
 
-        addFormToggle(formColX(0, 2), 98, formColW(0, 2), "screen.another_stages.stage_generator.field.block_open",
+        addFormToggle(formColX(0, 2), 62, formColW(0, 2), "screen.another_stages.stage_generator.field.block_open",
                 () -> draft.blockOpen, v -> draft.blockOpen = v);
-        addFormToggle(formColX(1, 2), 98, formColW(1, 2), "screen.another_stages.stage_generator.field.gui_msg_default",
+        addFormToggle(formColX(1, 2), 62, formColW(1, 2), "screen.another_stages.stage_generator.field.gui_msg_default",
                 () -> draft.guiMessageDefault, v -> draft.guiMessageDefault = v);
 
-        addFormLabel(formColX(0, 2), 118, formColW(0, 2), "screen.another_stages.stage_generator.field.max_slots");
-        maxSlotsBox = addFormBox(formColX(1, 2), 118, formColW(1, 2), 12, String.valueOf(draft.maxSlots), 8, v -> {
+        addFormLabel(formColX(0, 2), 82, formColW(0, 2), "screen.another_stages.stage_generator.field.max_slots");
+        maxSlotsBox = addFormBox(formColX(1, 2), 82, formColW(1, 2), 12, String.valueOf(draft.maxSlots), 8, v -> {
             try {
                 draft.maxSlots = Integer.parseInt(v.trim());
             } catch (Exception ignored) {
@@ -942,24 +993,9 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             return;
         }
         editingMatcherIndex = index;
-        matcherKind = detectMatcherKind(target.get(index));
         subView = SubView.MATCHER_ENTRY;
         savedScroll = 0;
         rebuild();
-    }
-
-    private static MatcherKind detectMatcherKind(@Nullable String value) {
-        if (value == null) {
-            return MatcherKind.ITEM;
-        }
-        String v = value.trim();
-        if (v.startsWith("#")) {
-            return MatcherKind.TAG;
-        }
-        if (v.startsWith("@")) {
-            return MatcherKind.MOD;
-        }
-        return MatcherKind.ITEM;
     }
 
     private void buildMatcherEntry() {
@@ -975,81 +1011,64 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             rebuild();
             return;
         }
-        String current = target.get(editingMatcherIndex);
+        String current = target.get(editingMatcherIndex) == null ? "" : target.get(editingMatcherIndex);
 
         addFormLabel(FORM_LEFT, 8, FORM_WIDTH, "screen.another_stages.stage_generator.matcher.entry_title");
-        // Shop-style: label + single cycling type selector (not three buttons).
-        addFormLabel(FORM_LEFT, 22, FORM_WIDTH, "screen.another_stages.stage_generator.matcher.type");
-        addFormCycle(FORM_LEFT, 34, FORM_WIDTH, 14, matcherTypeLabel(), delta -> cycleMatcherKind(target, delta));
+        addFormLabel(FORM_LEFT, 18, FORM_WIDTH, "screen.another_stages.stage_generator.matcher.calibrate_hint");
 
-        addFormLabel(FORM_LEFT, 54, FORM_WIDTH, "screen.another_stages.stage_generator.matcher.value");
-        String display = current == null ? "" : current;
-        if (matcherKind == MatcherKind.TAG && display.startsWith("#")) {
-            display = display.substring(1);
-        } else if (matcherKind == MatcherKind.MOD && display.startsWith("@")) {
-            display = display.substring(1);
-        }
-        matcherValueBox = addFormBox(FORM_LEFT, 64, FORM_WIDTH, 14, display, 256, v -> {});
+        // Shop-style: ← [ghost] → [value] — drop an item to calibrate id / #tag / @mod.
+        int rowY = StageGeneratorMenu.MATCHER_ROW_Y;
+        int arrowY = rowY + (StageGeneratorMenu.MATCHER_SLOT - StageGeneratorMenu.MATCHER_ARROW) / 2;
+        int boxY = rowY + (StageGeneratorMenu.MATCHER_SLOT - 14) / 2;
+        syncGhostFromValueQuiet(current);
+        setupMatcherVariants(current);
 
-        if (matcherKind == MatcherKind.ITEM) {
-            syncGhostFromValue(current);
-        }
+        addFormButton(FORM_LEFT, arrowY, StageGeneratorMenu.MATCHER_ARROW, StageGeneratorMenu.MATCHER_ARROW,
+                Component.literal("←"), () -> cycleMatcherVariant(target, -1));
+        addFormButton(matcherRightArrowX(), arrowY, StageGeneratorMenu.MATCHER_ARROW, StageGeneratorMenu.MATCHER_ARROW,
+                Component.literal("→"), () -> cycleMatcherVariant(target, 1));
 
-        if (matcherKind == MatcherKind.ITEM) {
-            addInvSideDone(this::navigateUp);
-        } else {
-            addBottomButton(doneLabel(), this::navigateUp);
-        }
-    }
-
-    private Component matcherTypeLabel() {
-        return Component.translatable(switch (matcherKind) {
-            case ITEM -> "screen.another_stages.stage_generator.matcher.type.item";
-            case TAG -> "screen.another_stages.stage_generator.matcher.type.tag";
-            case MOD -> "screen.another_stages.stage_generator.matcher.type.mod";
+        int boxX = matcherEditBoxX();
+        int boxW = Math.max(40, FORM_RIGHT - boxX);
+        matcherValueBox = addFormBox(boxX, boxY, boxW, 14, current, 256, v -> {
+            if (editingMatcherIndex >= 0 && editingMatcherIndex < target.size()) {
+                target.set(editingMatcherIndex, v == null ? "" : v.trim());
+                matcherVariantIndex = StageGenMatcherVariants.indexOfOrZero(matcherVariants, v);
+                autosaveIfReady();
+            }
         });
+
+        addInvSideDone(this::navigateUp);
     }
 
-    private void cycleMatcherKind(List<String> target, int delta) {
+    private void setupMatcherVariants(@Nullable String current) {
+        matcherVariants.clear();
+        ItemStack stack = menu.getGhostStack();
+        if (!stack.isEmpty()) {
+            matcherVariants.addAll(StageGenMatcherVariants.variantsFromStack(stack));
+        }
+        if (current != null && !current.isBlank() && !matcherVariants.contains(current.trim())) {
+            matcherVariants.add(0, current.trim());
+        }
+        if (matcherVariants.isEmpty() && current != null && !current.isBlank()) {
+            matcherVariants.add(current.trim());
+        }
+        matcherVariantIndex = StageGenMatcherVariants.indexOfOrZero(matcherVariants, current);
+    }
+
+    private void cycleMatcherVariant(List<String> target, int delta) {
+        if (matcherVariants.isEmpty()) {
+            return;
+        }
+        matcherVariantIndex = Math.floorMod(matcherVariantIndex + delta, matcherVariants.size());
+        String value = matcherVariants.get(matcherVariantIndex);
         if (matcherValueBox != null) {
-            commitMatcherEntry(target);
+            matcherValueBox.setValue(value);
         }
-        MatcherKind[] order = MatcherKind.values();
-        int idx = matcherKind.ordinal();
-        int n = order.length;
-        matcherKind = order[Math.floorMod(idx + delta, n)];
-        switch (matcherKind) {
-            case ITEM -> stripPrefixToItem(target);
-            case TAG -> applyKindPrefix(target, "#");
-            case MOD -> applyKindPrefix(target, "@");
+        if (editingMatcherIndex >= 0 && editingMatcherIndex < target.size()) {
+            target.set(editingMatcherIndex, value);
         }
-        savedScroll = 0;
-        rebuild();
-    }
-
-    private void stripPrefixToItem(List<String> target) {
-        if (editingMatcherIndex < 0 || editingMatcherIndex >= target.size()) {
-            return;
-        }
-        String v = target.get(editingMatcherIndex);
-        if (v == null) {
-            return;
-        }
-        if (v.startsWith("#") || v.startsWith("@")) {
-            target.set(editingMatcherIndex, v.substring(1));
-        }
-    }
-
-    private void applyKindPrefix(List<String> target, String prefix) {
-        if (editingMatcherIndex < 0 || editingMatcherIndex >= target.size()) {
-            return;
-        }
-        String v = target.get(editingMatcherIndex) == null ? "" : target.get(editingMatcherIndex).trim();
-        if (v.startsWith("#") || v.startsWith("@")) {
-            v = v.substring(1);
-        }
-        target.set(editingMatcherIndex, prefix + v);
-        menu.clearGhost();
+        autosaveIfReady();
     }
 
     private void commitMatcherEntry(List<String> target) {
@@ -1057,30 +1076,25 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             return;
         }
         String raw = matcherValueBox.getValue() == null ? "" : matcherValueBox.getValue().trim();
-        String value = switch (matcherKind) {
-            case ITEM -> raw.startsWith("#") || raw.startsWith("@") ? raw.substring(1) : raw;
-            case TAG -> raw.startsWith("#") ? raw : "#" + raw;
-            case MOD -> raw.startsWith("@") ? raw : "@" + raw;
-        };
-        target.set(editingMatcherIndex, value);
+        target.set(editingMatcherIndex, raw);
     }
 
-    private void syncGhostFromValue(@Nullable String value) {
+    private void syncGhostFromValueQuiet(@Nullable String value) {
         if (value == null || value.isBlank() || value.startsWith("#") || value.startsWith("@")) {
-            menu.clearGhost();
+            menu.clearGhostQuiet();
             return;
         }
         Identifier id = Identifier.tryParse(value.contains(":") ? value : "minecraft:" + value);
         if (id == null) {
-            menu.clearGhost();
+            menu.clearGhostQuiet();
             return;
         }
         var item = BuiltInRegistries.ITEM.getOptional(id).orElse(null);
         if (item == null) {
-            menu.clearGhost();
+            menu.clearGhostQuiet();
             return;
         }
-        menu.setGhostStack(new ItemStack(item));
+        menu.setGhostStack(new ItemStack(item), false);
     }
 
     private void buildStageList() {
@@ -1203,10 +1217,6 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void flushEntryBoxes(RestrictionDraft draft) {
-        if (idBox != null) {
-            draft.id = idBox.getValue().trim();
-            draft.ensureId();
-        }
         if (mimicBox != null) {
             draft.mimic = mimicBox.getValue().trim();
         }
@@ -1420,18 +1430,38 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void onGhostChanged() {
-        if (!acceptsGhostInCurrentView()) {
+        if (!acceptsGhostInCurrentView() || subView != SubView.MATCHER_ENTRY) {
+            return;
+        }
+        RestrictionDraft draft = draft();
+        if (draft == null || editingMatcherIndex < 0) {
+            return;
+        }
+        List<String> target = matcherListFor(draft, matcherListParent);
+        if (editingMatcherIndex >= target.size()) {
             return;
         }
         ItemStack stack = menu.getGhostStack();
-        if (stack.isEmpty() || matcherValueBox == null) {
+        if (stack.isEmpty()) {
+            setupMatcherVariants("");
+            if (matcherValueBox != null) {
+                matcherValueBox.setValue("");
+            }
+            target.set(editingMatcherIndex, "");
+            autosaveIfReady();
             return;
         }
-        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        if (id == null) {
+        setupMatcherVariants(null);
+        if (matcherVariants.isEmpty()) {
             return;
         }
-        matcherValueBox.setValue(id.toString());
+        matcherVariantIndex = 0;
+        String value = matcherVariants.get(0);
+        if (matcherValueBox != null) {
+            matcherValueBox.setValue(value);
+        }
+        target.set(editingMatcherIndex, value);
+        autosaveIfReady();
     }
 
     private static @Nullable String firstMatcherId(RestrictionDraft d) {

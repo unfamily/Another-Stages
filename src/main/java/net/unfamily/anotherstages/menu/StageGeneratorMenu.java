@@ -13,8 +13,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Stage Generator container (ShopEdit footprint 300×240): ghost + player inventory.
  * Slot.x/y are final in 26.x, so slots stay parked off-screen (always {@code isActive})
- * so JEI/EMI/REI keep a normal container. The screen draws/clicks the inv UI only when
- * matcher-entry item mode is active, using {@link #visualSlotX(int)} / {@link #visualSlotY(int)}.
+ * so JEI/EMI/REI keep a normal container. The screen draws/clicks the inv UI only on
+ * matcher-entry, using {@link #visualSlotX(int)} / {@link #visualSlotY(int)}.
+ * Ghost visual sits in the Shop-style {@code ← [slot] →} calibrator row (not above the inv).
  */
 public final class StageGeneratorMenu extends AbstractContainerMenu {
     public static final int GUI_WIDTH = 300;
@@ -26,10 +27,23 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
 
     public static final int PLAYER_INV_X = 20;
     public static final int PLAYER_INV_Y = 154;
-    public static final int GHOST_X = PLAYER_INV_X;
-    public static final int GHOST_Y = PLAYER_INV_Y - 22;
 
-    /** Done beside player inventory — only when matcher-entry item UI is shown. */
+    public static final int LIST_X = 8;
+    public static final int LIST_Y = 28;
+    /** Full panel width — actions sit on the bottom bar, not a side column. */
+    public static final int LIST_RIGHT = GUI_WIDTH - 8;
+    public static final int LIST_WIDTH = LIST_RIGHT - LIST_X;
+
+    /** Matcher calibrator row (matches StageGeneratorScreen ← slot → layout). */
+    public static final int MATCHER_ARROW = 12;
+    public static final int MATCHER_SLOT = 18;
+    public static final int MATCHER_ARROW_GAP = 4;
+    public static final int MATCHER_ROW_Y = 34;
+    /** FORM_LEFT ({@code LIST_X + 4}) + arrow + gap. */
+    public static final int GHOST_X = LIST_X + 4 + MATCHER_ARROW + MATCHER_ARROW_GAP;
+    public static final int GHOST_Y = MATCHER_ROW_Y;
+
+    /** Done beside player inventory — matcher-entry only. */
     public static final int SIDE_BTN_X = 188;
     public static final int SIDE_BTN_Y = PLAYER_INV_Y;
     public static final int SIDE_BTN_W = 72;
@@ -40,12 +54,6 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
     public static final int BOTTOM_BTN_GAP = 4;
     public static final int BOTTOM_PAD = 8;
     public static final int BOTTOM_BAR_Y = GUI_HEIGHT - BOTTOM_PAD - BOTTOM_BTN_H;
-
-    public static final int LIST_X = 8;
-    public static final int LIST_Y = 28;
-    /** Full panel width — actions sit on the bottom bar, not a side column. */
-    public static final int LIST_RIGHT = GUI_WIDTH - 8;
-    public static final int LIST_WIDTH = LIST_RIGHT - LIST_X;
 
     /** Parked coordinates so recipe viewers still see active player slots. */
     private static final int OFFSCREEN = -10000;
@@ -83,15 +91,24 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
     }
 
     public void setGhostStack(ItemStack stack) {
+        setGhostStack(stack, true);
+    }
+
+    /** Sets the calibrator ghost; when {@code notify} is false, skips {@link #onGhostChanged}. */
+    public void setGhostStack(ItemStack stack, boolean notify) {
         ghost.setItem(0, stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
         broadcastChanges();
-        if (onGhostChanged != null) {
+        if (notify && onGhostChanged != null) {
             onGhostChanged.run();
         }
     }
 
     public void clearGhost() {
-        setGhostStack(ItemStack.EMPTY);
+        setGhostStack(ItemStack.EMPTY, true);
+    }
+
+    public void clearGhostQuiet() {
+        setGhostStack(ItemStack.EMPTY, false);
     }
 
     public void setSlotsVisible(boolean visible) {

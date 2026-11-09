@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Server-side fixed-path write/merge for Stage Generator saves. */
 public final class StageGenFileWriter {
@@ -42,15 +42,21 @@ public final class StageGenFileWriter {
         }
     }
 
-    /** Removes a restriction by id from the category JSON file (Kube delete not supported yet). */
-    public static Result delete(ServerPlayer player, RestrictionDraft.Category category, String id) {
+    /**
+     * Removes a restriction from the category file.
+     * JSON: by silent {@code id}. Kube: by {@code kubeEntryIndex} then rewrite Entry N file.
+     */
+    public static Result delete(ServerPlayer player, RestrictionDraft.Category category, String id, int kubeEntryIndex) {
+        if (AsConfig.preferKubejs()) {
+            return deleteKube(category, kubeEntryIndex);
+        }
+        return deleteJson(category, id);
+    }
+
+    private static Result deleteJson(RestrictionDraft.Category category, String id) {
         if (id == null || id.isBlank()) {
             return new Result(false, "", Component.translatable(
                     "screen.another_stages.stage_generator.save.failed", "missing id"));
-        }
-        if (AsConfig.preferKubejs()) {
-            return new Result(false, "", Component.translatable(
-                    "screen.another_stages.stage_generator.delete.kube_unsupported"));
         }
         try {
             Path file = StageGenPaths.resolveJsonFile(category);
@@ -78,6 +84,34 @@ public final class StageGenFileWriter {
                     "screen.another_stages.stage_generator.delete.ok", id));
         } catch (Exception ex) {
             AnotherStages.LOGGER.error("Stage Generator delete failed", ex);
+            return new Result(false, "", Component.translatable(
+                    "screen.another_stages.stage_generator.save.failed",
+                    ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+        }
+    }
+
+    private static Result deleteKube(RestrictionDraft.Category category, int kubeEntryIndex) {
+        try {
+            Path file = StageGenPaths.resolveKubeFile(category);
+            List<RestrictionDraft> entries = new ArrayList<>();
+            if (Files.isRegularFile(file)) {
+                entries.addAll(StageGenKubeReader.loadCategory(category));
+            }
+            if (kubeEntryIndex >= 0 && kubeEntryIndex < entries.size()) {
+                entries.remove(kubeEntryIndex);
+            }
+            for (int i = 0; i < entries.size(); i++) {
+                entries.get(i).kubeEntryIndex = i;
+                entries.get(i).category = category;
+            }
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, KubeExporter.exportFile(category, entries), StandardCharsets.UTF_8);
+            String display = StageGenPaths.displayKubePath(category);
+            return new Result(true, display, Component.translatable(
+                    "screen.another_stages.stage_generator.delete.ok",
+                    "Entry " + kubeEntryIndex));
+        } catch (Exception ex) {
+            AnotherStages.LOGGER.error("Stage Generator kube delete failed", ex);
             return new Result(false, "", Component.translatable(
                     "screen.another_stages.stage_generator.save.failed",
                     ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
@@ -140,25 +174,28 @@ public final class StageGenFileWriter {
     private static Result saveKube(RestrictionDraft draft) throws IOException {
         Path file = StageGenPaths.resolveKubeFile(draft.category);
         Files.createDirectories(file.getParent());
-        String block = KubeExporter.export(draft);
-        String content;
+        List<RestrictionDraft> entries = new ArrayList<>();
         if (Files.isRegularFile(file)) {
-            content = Files.readString(file, StandardCharsets.UTF_8);
-            Matcher m = Pattern.compile(
-                    "(?s)// stagegen:" + Pattern.quote(draft.id) + "\n.*?// end-stagegen:"
-                            + Pattern.quote(draft.id) + "\n?").matcher(content);
-            if (m.find()) {
-                content = m.replaceFirst(Matcher.quoteReplacement(block));
-            } else {
-                if (!content.endsWith("\n") && !content.isEmpty()) {
-                    content = content + "\n";
-                }
-                content = content + "\n" + block;
-            }
-        } else {
-            content = block;
+            entries.addAll(StageGenKubeReader.loadCategory(draft.category));
         }
-        Files.writeString(file, content, StandardCharsets.UTF_8);
+        for (RestrictionDraft e : entries) {
+            e.category = draft.category;
+        }
+        if (draft.kubeEntryIndex >= 0 && draft.kubeEntryIndex < entries.size()) {
+            RestrictionDraft copy = RestrictionDraft.fromJson(draft.toJson().toString());
+            copy.category = draft.category;
+            copy.kubeEntryIndex = draft.kubeEntryIndex;
+            entries.set(draft.kubeEntryIndex, copy);
+        } else {
+            RestrictionDraft copy = RestrictionDraft.fromJson(draft.toJson().toString());
+            copy.category = draft.category;
+            copy.kubeEntryIndex = entries.size();
+            entries.add(copy);
+        }
+        for (int i = 0; i < entries.size(); i++) {
+            entries.get(i).kubeEntryIndex = i;
+        }
+        Files.writeString(file, KubeExporter.exportFile(draft.category, entries), StandardCharsets.UTF_8);
         String display = StageGenPaths.displayKubePath(draft.category);
         return new Result(true, display, Component.translatable(
                 "screen.another_stages.stage_generator.save.ok_kube",
