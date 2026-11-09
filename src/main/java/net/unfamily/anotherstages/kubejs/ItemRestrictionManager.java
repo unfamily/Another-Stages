@@ -104,10 +104,84 @@ public final class ItemRestrictionManager {
             return this;
         }
 
+        /** Adds {@code inventory} case with default {@code inventory_ticks} (30). */
+        public ItemRestrictBuilder inventory() {
+            return inventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        }
+
+        /**
+         * Adds {@code inventory} case. {@code ticks < 1} (or omitted via no-arg) uses default 30.
+         */
+        public ItemRestrictBuilder inventory(int ticks) {
+            addOther(StageItemHandler.CASE_INVENTORY);
+            rule.inventoryTicks = StageItemHandler.normalizeInventoryTicks(ticks);
+            return this;
+        }
+
+        /**
+         * Preferred alias for listing cases (same list as {@code other_case} / other-case verbs).
+         * Merges into the existing case list without clearing.
+         */
+        public ItemRestrictBuilder cases(Object cases) {
+            for (String key : KubeStageMaps.stringList(cases)) {
+                addOther(key);
+            }
+            StageItemHandler.expandOtherCaseAll(rule.otherCase);
+            return this;
+        }
+
+        /**
+         * Expands to the four click/hand cases <strong>plus</strong> {@code inventory}
+         * with default inventory ticks (30). Unlike {@link #otherCaseAll()}, includes inventory.
+         */
+        public ItemRestrictBuilder casesAll() {
+            return casesAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        }
+
+        /**
+         * Like {@link #casesAll()} with custom {@code inventory_ticks} ({@code ticks < 1} → 30).
+         */
+        public ItemRestrictBuilder casesAll(int ticks) {
+            rule.otherCase.clear();
+            for (String s : StageItemHandler.ALL_OTHER_CASES) {
+                rule.otherCase.add(s);
+            }
+            rule.otherCase.add(StageItemHandler.CASE_INVENTORY);
+            rule.inventoryTicks = StageItemHandler.normalizeInventoryTicks(ticks);
+            return this;
+        }
+
+        /** Legacy: expands to the four click/hand cases only (no inventory). */
         public ItemRestrictBuilder otherCaseAll() {
             rule.otherCase.clear();
             rule.otherCase.add("all");
             StageItemHandler.expandOtherCaseAll(rule.otherCase);
+            return this;
+        }
+
+        /** When false, matching ItemEntities cannot be picked up while the rule is active. Default true. */
+        public ItemRestrictBuilder canPickup(boolean canPickup) {
+            rule.canPickup = canPickup;
+            return this;
+        }
+
+        /** Opt into default pickup-denied action-bar lang, or silence with {@code false}. */
+        public ItemRestrictBuilder pickupMessage(boolean useDefault) {
+            rule.pickupMessageComponent = null;
+            rule.pickupMessage = useDefault ? StageItemHandler.DEFAULT_PICKUP_MESSAGE : "";
+            return this;
+        }
+
+        public ItemRestrictBuilder pickupMessage(String message) {
+            rule.pickupMessageComponent = null;
+            rule.pickupMessage = message == null ? "" : message;
+            return this;
+        }
+
+        public ItemRestrictBuilder pickupMessage(Component component) {
+            if (component != null) {
+                rule.pickupMessageComponent = component;
+            }
             return this;
         }
 
@@ -213,6 +287,9 @@ public final class ItemRestrictionManager {
             ifRule.conditions.clear();
             ifRule.conditions.addAll(KubeStageMaps.intList(conditionIndices));
             StageItemHandler.expandOtherCaseAll(ifRule.otherCase);
+            if (b.inventoryTicksOverride >= 1) {
+                rule.inventoryTicks = b.inventoryTicksOverride;
+            }
             rule.ifConditions.add(ifRule);
             return this;
         }
@@ -237,6 +314,8 @@ public final class ItemRestrictionManager {
             parts.add(String.join(",", rule.items));
             parts.add(String.join(",", rule.exclude));
             parts.add(String.join(",", rule.otherCase));
+            parts.add("canPickup=" + rule.canPickup);
+            parts.add("invTicks=" + rule.inventoryTicks);
             parts.add(String.join(",", rule.containersList));
             for (StageItemHandler.StageCondition c : rule.stages) {
                 parts.add(c.stageType + ":" + c.stage + ":" + c.is);
@@ -248,6 +327,8 @@ public final class ItemRestrictionManager {
 
     public static final class ItemBranchBuilder {
         private final StageItemHandler.StageItemIfRule ifRule = new StageItemHandler.StageItemIfRule();
+        /** {@code >= 1} when set by {@link #inventory(int)} / {@link #casesAll(int)}; applied to parent rule. */
+        int inventoryTicksOverride = -1;
 
         public ItemBranchBuilder containersWhitelist(boolean whitelist) {
             ifRule.containersWhitelist = whitelist;
@@ -289,6 +370,37 @@ public final class ItemRestrictionManager {
 
         public ItemBranchBuilder offHand() {
             addOther("off_hand");
+            return this;
+        }
+
+        public ItemBranchBuilder inventory() {
+            return inventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        }
+
+        public ItemBranchBuilder inventory(int ticks) {
+            addOther(StageItemHandler.CASE_INVENTORY);
+            inventoryTicksOverride = StageItemHandler.normalizeInventoryTicks(ticks);
+            return this;
+        }
+
+        public ItemBranchBuilder cases(Object cases) {
+            for (String key : KubeStageMaps.stringList(cases)) {
+                addOther(key);
+            }
+            return this;
+        }
+
+        public ItemBranchBuilder casesAll() {
+            return casesAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        }
+
+        public ItemBranchBuilder casesAll(int ticks) {
+            ifRule.otherCase.clear();
+            for (String s : StageItemHandler.ALL_OTHER_CASES) {
+                ifRule.otherCase.add(s);
+            }
+            ifRule.otherCase.add(StageItemHandler.CASE_INVENTORY);
+            inventoryTicksOverride = StageItemHandler.normalizeInventoryTicks(ticks);
             return this;
         }
 

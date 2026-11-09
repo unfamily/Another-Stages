@@ -230,12 +230,20 @@ dependencies {
     }
     // itemListMod == 'none' → compileOnly only
 
-    // Fast*: compileAlways. Runtime: FastFurnace ON (gate under test); FastWorkbench OFF so vanilla crafting table is tested.
+    //Fast*: compileAlways. Runtime: FastFurnace ON (gate under test); FastWorkbench OFF so vanilla crafting table is tested.
     compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
+
+    // Polymorph+ (Aminoquiz fork) — 26.1.2 uses mod id polymorph_plus; filter stage-locked conflict candidates.
+    compileOnly "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
+    localRuntime "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
+
+    // Jade — stage_block / stage_item tooltip disguise
+    compileOnly "curse.maven:jade-324717:${jade_file_id}"
+    localRuntime "curse.maven:jade-324717:${jade_file_id}"
 
     // KubeJS — compile API from Latvian Maven; CurseMaven runtimes (Rhino + BAT required)
     compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"

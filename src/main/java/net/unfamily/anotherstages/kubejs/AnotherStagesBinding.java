@@ -5,15 +5,24 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Single KubeJS binding: fluent managers + exceptional stage queries.
- * Bound as {@code AnotherStages} only (no {@code Stages} alias).
+ * KubeJS binding {@code AnotherStages}: stage <strong>query</strong> helpers for {@code if}-style checks.
+ * Restriction registration prefers {@code AnotherStagesEvents.restrictions}; the {@code items}/{@code recipes}/
+ * {@code blocks}/{@code guis} managers remain for retrocompat with packs that called them top-level.
  */
 public final class AnotherStagesBinding {
     public static final AnotherStagesBinding INSTANCE = new AnotherStagesBinding();
 
+    /** Prefer {@code AnotherStagesEvents.restrictions(e => e.items…)}. Kept for retrocompat. */
+    @Deprecated
     public final ItemRestrictionManager items = new ItemRestrictionManager();
+    /** Prefer {@code AnotherStagesEvents.restrictions(e => e.recipes…)}. Kept for retrocompat. */
+    @Deprecated
     public final RecipeRestrictionManager recipes = new RecipeRestrictionManager();
+    /** Prefer {@code AnotherStagesEvents.restrictions(e => e.blocks…)}. Kept for retrocompat. */
+    @Deprecated
     public final BlockRestrictionManager blocks = new BlockRestrictionManager();
+    /** Prefer {@code AnotherStagesEvents.restrictions(e => e.guis…)}. Kept for retrocompat. */
+    @Deprecated
     public final GuiRestrictionManager guis = new GuiRestrictionManager();
 
     private AnotherStagesBinding() {}

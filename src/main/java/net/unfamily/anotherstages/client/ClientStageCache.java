@@ -7,15 +7,21 @@ import java.util.Set;
 
 /**
  * Client-side mirror of the local player's stages (synced from the server).
- * Library stage checks are server-only; RV overlays need this cache.
+ * Library stage checks are server-only; RV overlays and stage_block mimic need this cache.
  */
 public final class ClientStageCache {
     private static final Set<String> PLAYER = new HashSet<>();
     private static final Set<String> WORLD = new HashSet<>();
     private static final Set<String> TEAM = new HashSet<>();
     private static int revision;
+    /** Optional client hook (e.g. rebuild mimic meshes); must not pull client-only classes into common load. */
+    private static Runnable onChanged = () -> {};
 
     private ClientStageCache() {}
+
+    public static void setOnChanged(Runnable hook) {
+        onChanged = hook != null ? hook : () -> {};
+    }
 
     public static void apply(List<String> player, List<String> world, List<String> team) {
         PLAYER.clear();
@@ -31,6 +37,7 @@ public final class ClientStageCache {
             TEAM.addAll(team);
         }
         revision++;
+        onChanged.run();
     }
 
     public static void clear() {
@@ -38,6 +45,7 @@ public final class ClientStageCache {
         WORLD.clear();
         TEAM.clear();
         revision++;
+        onChanged.run();
     }
 
     public static boolean hasPlayerStage(String stage) {
@@ -70,5 +78,22 @@ public final class ClientStageCache {
 
     public static Set<String> playerStagesView() {
         return Collections.unmodifiableSet(PLAYER);
+    }
+
+    public static Set<String> worldStagesView() {
+        return Collections.unmodifiableSet(WORLD);
+    }
+
+    public static Set<String> teamStagesView() {
+        return Collections.unmodifiableSet(TEAM);
+    }
+
+    /** All known stage ids from the last sync (player ∪ world ∪ team). */
+    public static Set<String> allKnownStages() {
+        Set<String> all = new HashSet<>(PLAYER.size() + WORLD.size() + TEAM.size());
+        all.addAll(PLAYER);
+        all.addAll(WORLD);
+        all.addAll(TEAM);
+        return Collections.unmodifiableSet(all);
     }
 }

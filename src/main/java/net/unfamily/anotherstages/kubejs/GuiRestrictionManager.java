@@ -63,16 +63,32 @@ public final class GuiRestrictionManager {
             return this;
         }
 
+        /**
+         * {@code true} = inherit default lang key; {@code false} = use blank string
+         * (runtime still falls back to default GUI blocked message).
+         */
+        public GuiRestrictBuilder message(boolean useDefault) {
+            rule.messageComponent = null;
+            rule.message = useDefault ? StageGuiRule.DEFAULT_MESSAGE : "";
+            return this;
+        }
+
+        /**
+         * Lang key (dotted, no spaces) or literal string.
+         * Empty / omitted → default {@link StageGuiRule#DEFAULT_MESSAGE} at resolve time.
+         */
         public GuiRestrictBuilder message(String message) {
+            rule.messageComponent = null;
             if (message != null) {
                 rule.message = message;
             }
             return this;
         }
 
+        /** Formatted Kube {@code Text}/{@code Component}; takes priority over string. */
         public GuiRestrictBuilder message(Component component) {
             if (component != null) {
-                rule.message = component.getString();
+                rule.messageComponent = component;
             }
             return this;
         }

@@ -41,7 +41,7 @@ public abstract class BlockAppearanceMixin {
             return;
         }
         StageBlockRule rule = StageBlockHandler.findActiveRule(state, mc.player, mc.level);
-        if (rule != null) {
+        if (StageBlockHandler.usesCamouflage(rule)) {
             cir.setReturnValue(StageBlockHandler.mimicState(rule));
         }
     }

@@ -24,6 +24,8 @@ public class AnotherStages {
     public AnotherStages(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.COMMON, AsConfig.SPEC);
         AsAttachmentTypes.register(modEventBus);
+        net.unfamily.anotherstages.item.AsItems.register(modEventBus);
+        net.unfamily.anotherstages.menu.AsMenus.register(modEventBus);
         modEventBus.addListener(AsNetworking::register);
         AsNetworking.installHooks();
         // Install order: Library <- items <- recipes <- blocks <- guis <- kube soft <- utils reload bridge
@@ -36,6 +38,7 @@ public class AnotherStages {
         modEventBus.addListener(net.unfamily.anotherstages.datapack.AsUtilsReloadBridge::onCommonSetup);
         if (FMLEnvironment.getDist() == Dist.CLIENT) {
             net.unfamily.anotherstages.client.StageItemClientSetup.register(modEventBus);
+            net.unfamily.anotherstages.client.AsClientSetup.register(modEventBus);
         }
         if (AsConfig.loggingEnabled()) {
             LOGGER.info("Another Stages initialized (logging enabled)");

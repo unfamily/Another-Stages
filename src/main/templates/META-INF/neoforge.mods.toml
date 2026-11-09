@@ -22,6 +22,12 @@ config="${mod_id}.fastbench.mixins.json"
 [[mixins]]
 config="${mod_id}.fastfurnace.mixins.json"
 
+[[mixins]]
+config="${mod_id}.polymorph.mixins.json"
+
+[[mixins]]
+config="${mod_id}.jei.mixins.json"
+
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
@@ -137,6 +143,20 @@ config="${mod_id}.fastfurnace.mixins.json"
     versionRange="[0,)"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="polymorph_plus"
+    type="optional"
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="jade"
+    type="optional"
+    versionRange="[0,)"
+    ordering="AFTER"
+    side="CLIENT"
 
 [[dependencies.${mod_id}]]
     modId="kubejs"

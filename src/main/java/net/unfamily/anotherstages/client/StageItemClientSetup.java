@@ -9,12 +9,14 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.unfamily.anotherstages.AnotherStages;
+import net.unfamily.anotherstages.client.block.StageBlockClientEvents;
 
 @EventBusSubscriber(modid = AnotherStages.MOD_ID, value = Dist.CLIENT)
 public final class StageItemClientSetup {
     private StageItemClientSetup() {}
 
     public static void register(IEventBus modEventBus) {
+        ClientStageCache.setOnChanged(StageBlockClientEvents::markAllDirty);
         modEventBus.addListener(StageItemClientSetup::onRegisterItemDecorations);
     }
 

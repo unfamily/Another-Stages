@@ -9,7 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.regex.Pattern;
 
 /**
- * KubeJS bindings for interrogating stages. No events — call from existing script hooks.
+ * Stage query helpers used by the {@code AnotherStages} binding ({@code if}-style checks).
+ * Restriction registration uses {@link AnotherStagesEvents#RESTRICTIONS}, not these methods.
  * Prefer {@code teamHasStage(player, stage)} for pack checks that should include the player's team.
  */
 public final class StageBindings {

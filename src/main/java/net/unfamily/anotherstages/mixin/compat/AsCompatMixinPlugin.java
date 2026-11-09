@@ -24,6 +24,13 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
         if (lower.contains("fastbench")) {
             return isLoaded("fastbench");
         }
+        if (lower.contains("polymorph")) {
+            // Polymorph+ on 26.1.2 uses mod id polymorph_plus (not upstream polymorph).
+            return isLoaded("polymorph_plus");
+        }
+        if (lower.contains(".jei.") || lower.contains("simpleitemstackbatchrenderer")) {
+            return isLoaded("jei");
+        }
         if (lower.contains("fastfurnace") && lower.contains("compat")) {
             // Gate FastFurnace's merged getRecipe(ServerLevel) on AbstractFurnaceBlockEntity
             return isLoaded("fastfurnace");

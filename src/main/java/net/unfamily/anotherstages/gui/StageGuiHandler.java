@@ -289,8 +289,14 @@ public final class StageGuiHandler {
     }
 
     public static Component resolveMessage(StageGuiRule rule) {
-        if (rule == null || rule.message == null || rule.message.isBlank()) {
-            return Component.translatable("message.another_stages.gui_blocked");
+        if (rule == null) {
+            return Component.translatable(StageGuiRule.DEFAULT_MESSAGE);
+        }
+        if (rule.messageComponent != null) {
+            return rule.messageComponent;
+        }
+        if (rule.message == null || rule.message.isBlank()) {
+            return Component.translatable(StageGuiRule.DEFAULT_MESSAGE);
         }
         String raw = rule.message.trim();
         if (raw.indexOf(' ') < 0 && raw.indexOf('.') >= 0) {

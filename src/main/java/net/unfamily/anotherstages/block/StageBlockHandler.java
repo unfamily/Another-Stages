@@ -13,6 +13,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.unfamily.anotherstages.client.ClientStageCache;
 import net.unfamily.anotherstages.recipe.StageCondition;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
@@ -41,6 +42,8 @@ public final class StageBlockHandler {
     private static final List<StageBlockRule> DATAPACK_RULES = new ArrayList<>();
     private static final Map<String, StageBlockRule> SCRIPT_RULES = new HashMap<>();
     private static final Map<Identifier, List<StageBlockRule>> BY_BLOCK = new HashMap<>();
+    /** Fast path: any loaded rule has {@code stop_tick: true}. */
+    private static boolean anyStopTickRules = false;
 
     private StageBlockHandler() {}
 
@@ -128,7 +131,11 @@ public final class StageBlockHandler {
 
     private static void rebuildIndexes() {
         BY_BLOCK.clear();
+        anyStopTickRules = false;
         for (StageBlockRule rule : allRules()) {
+            if (rule.stopTick) {
+                anyStopTickRules = true;
+            }
             for (String id : rule.blocks) {
                 if (id.startsWith("#") || id.startsWith("@") || StageIdMatchers.hasRegexPrefix(id)) {
                     continue;
@@ -163,9 +170,18 @@ public final class StageBlockHandler {
         readList(obj, "block", rule.blocks);
         readList(obj, "exclude", rule.exclude);
         rule.mimic = obj.has("mimic") ? obj.get("mimic").getAsString() : "minecraft:stone";
+        // Omitted → true (visual camouflage on). Explicit false = loot-only.
+        rule.camouflage = !obj.has("camouflage") || obj.get("camouflage").getAsBoolean();
         rule.unbreakable = obj.has("unbreakable") && obj.get("unbreakable").getAsBoolean();
-        rule.breakMessage = obj.has("break_message") ? obj.get("break_message").getAsString() : "";
-        rule.interactMessage = obj.has("interact_message") ? obj.get("interact_message").getAsString() : "";
+        // DANGEROUS opt-in: omit / false = no tick freeze
+        rule.stopTick = obj.has("stop_tick") && obj.get("stop_tick").getAsBoolean();
+        // Omitted / blank → silent; packdevs opt in with lang key or .breakMessage(true).
+        if (obj.has("break_message")) {
+            rule.breakMessage = obj.get("break_message").getAsString();
+        }
+        if (obj.has("interact_message")) {
+            rule.interactMessage = obj.get("interact_message").getAsString();
+        }
         readList(obj, "tooltips", rule.tooltips);
         rule.hideDefaultTooltips = obj.has("hide_default_tooltips") && obj.get("hide_default_tooltips").getAsBoolean();
         return rule;
@@ -271,11 +287,25 @@ public final class StageBlockHandler {
     }
 
     private static boolean check(StageCondition c, @Nullable Player player, @Nullable Level level) {
-        String type = c.stageType == null ? "player" : c.stageType;
+        String type = c.stageType == null || c.stageType.isBlank()
+                ? "player"
+                : c.stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("team_player".equals(type)) {
+            type = "team";
+        }
+        String stage = c.stage == null ? "" : c.stage.trim();
+        // Library StageRegistry is server-only; client render/tooltips use the synced cache.
+        if (level != null && level.isClientSide()) {
+            return switch (type) {
+                case "world" -> ClientStageCache.hasWorldStage(stage);
+                case "team" -> ClientStageCache.hasTeamStage(stage);
+                default -> ClientStageCache.hasPlayerStage(stage);
+            };
+        }
         return switch (type) {
-            case "world" -> level != null && StageRegistry.worldHasStage(level, c.stage);
-            case "team" -> player instanceof ServerPlayer sp && StageRegistry.playerTeamHasStage(sp, c.stage);
-            default -> player instanceof ServerPlayer sp && StageRegistry.playerHasStage(sp, c.stage);
+            case "world" -> level != null && StageRegistry.worldHasStage(level, stage);
+            case "team" -> player instanceof ServerPlayer sp && StageRegistry.playerTeamHasStage(sp, stage);
+            default -> player instanceof ServerPlayer sp && StageRegistry.playerHasStage(sp, stage);
         };
     }
 
@@ -290,17 +320,74 @@ public final class StageBlockHandler {
     }
 
     public static void maybeWarnBreak(Player player, StageBlockRule rule) {
-        if (!(player instanceof ServerPlayer sp) || rule.breakMessage == null || rule.breakMessage.isBlank()) {
+        if (!(player instanceof ServerPlayer sp)) {
             return;
         }
-        sp.sendSystemMessage(resolveText(rule.breakMessage), true);
+        Component message = resolveBreakMessage(rule);
+        if (message == null) {
+            return;
+        }
+        sp.sendSystemMessage(message, true);
     }
 
-    public static Component resolveText(String raw) {
-        if (raw.indexOf(' ') < 0 && raw.indexOf('.') >= 0) {
-            return Component.translatable(raw);
+    /**
+     * Resolved break feedback, or {@code null} when silent.
+     * Component (Kube Text) wins; blank string = off; otherwise lang key / literal.
+     */
+    @Nullable
+    public static Component resolveBreakMessage(StageBlockRule rule) {
+        if (rule == null) {
+            return null;
         }
-        return Component.literal(raw);
+        if (rule.breakMessageComponent != null) {
+            return rule.breakMessageComponent;
+        }
+        if (rule.breakMessage == null || rule.breakMessage.isBlank()) {
+            return null;
+        }
+        return resolveText(rule.breakMessage);
+    }
+
+    /**
+     * Resolved interact feedback, or {@code null} when silent.
+     * Component (Kube Text) wins; blank string = off; otherwise lang key / literal.
+     */
+    @Nullable
+    public static Component resolveInteractMessage(StageBlockRule rule) {
+        if (rule == null) {
+            return null;
+        }
+        if (rule.interactMessageComponent != null) {
+            return rule.interactMessageComponent;
+        }
+        if (rule.interactMessage == null || rule.interactMessage.isBlank()) {
+            return null;
+        }
+        return resolveText(rule.interactMessage);
+    }
+
+    /**
+     * String feedback: dotted with no spaces → lang key (translatable); otherwise literal (not translated).
+     */
+    public static Component resolveText(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Component.empty();
+        }
+        String trimmed = raw.trim();
+        if (trimmed.indexOf(' ') < 0 && trimmed.indexOf('.') >= 0) {
+            return Component.translatable(trimmed);
+        }
+        return Component.literal(trimmed);
+    }
+
+    /** Whether any block rules are loaded (client geometry early-out). */
+    public static boolean hasAnyRules() {
+        return ruleCount() > 0;
+    }
+
+    /** True when the active rule should hide the real mesh and draw the mimic. */
+    public static boolean usesCamouflage(@Nullable StageBlockRule rule) {
+        return rule != null && rule.camouflage;
     }
 
     public static boolean isLockedAt(BlockGetter level, BlockPos pos, @Nullable Player player) {
@@ -308,5 +395,17 @@ public final class StageBlockHandler {
             return false;
         }
         return findActiveRule(lvl.getBlockState(pos), player, lvl) != null;
+    }
+
+    /**
+     * DANGEROUS / best-effort: whether BE / scheduled / random ticks should be skipped at {@code pos}.
+     * {@code player} may be null (typical for autonomous machines) — prefer world stages.
+     */
+    public static boolean shouldStopTick(Level level, BlockPos pos, @Nullable Player player) {
+        if (!anyStopTickRules || level == null || pos == null || level.isClientSide()) {
+            return false;
+        }
+        StageBlockRule rule = findActiveRule(level.getBlockState(pos), player, level);
+        return rule != null && rule.stopTick;
     }
 }

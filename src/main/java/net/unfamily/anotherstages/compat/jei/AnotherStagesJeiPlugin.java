@@ -8,8 +8,10 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeHolderType;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.IAdvancedRegistration;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
 import mezz.jei.api.runtime.IJeiRuntime;
+import net.unfamily.anotherstages.client.gui.stagegen.StageGeneratorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -21,6 +23,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.ClientStageCache;
+import net.unfamily.anotherstages.item.AsItems;
 import net.unfamily.anotherstages.item.StageItemHandler;
 import net.unfamily.anotherstages.item.StageItemRvHelper;
 import net.unfamily.anotherstages.recipe.StageRecipeHandler;
@@ -52,6 +55,13 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        registration.addGhostIngredientHandler(
+                StageGeneratorScreen.class,
+                new StageGenGhostIngredientHandler());
+    }
+
+    @Override
     public void registerAdvanced(IAdvancedRegistration registration) {
         Set<Identifier> seen = new HashSet<>();
         registration.getJeiHelpers().getAllRecipeTypes().forEach(type -> {
@@ -76,6 +86,7 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
     public void onRuntimeAvailable(IJeiRuntime jeiRuntime) {
         runtime = jeiRuntime;
         lastFingerprint = "";
+        ensureHardcorePlaceholderHidden(jeiRuntime.getIngredientManager());
         refreshAll();
     }
 
@@ -104,6 +115,7 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
         Level level = mc.level;
         if (player == null || level == null) {
             restoreAllItems(runtime.getIngredientManager());
+            ensureHardcorePlaceholderHidden(runtime.getIngredientManager());
             restoreAllRecipes(runtime.getRecipeManager());
             return;
         }
@@ -122,15 +134,17 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
 
     private static void refreshHiddenIngredients(Player player, Level level) {
         IIngredientManager manager = runtime.getIngredientManager();
-        if (!StageItemHandler.hasLoadedRestrictions()) {
-            restoreAllItems(manager);
-            return;
-        }
-
         Set<Item> shouldHide = new HashSet<>();
-        for (Item item : BuiltInRegistries.ITEM) {
-            if (StageItemRvHelper.modeFor(player, level, item) == StageItemRvHelper.Mode.HIDE) {
-                shouldHide.add(item);
+        // Always hide the generic hardcore placeholder from JEI.
+        shouldHide.add(AsItems.STAGE_LOCKED_HARDCORE.get());
+        if (StageItemHandler.hasLoadedRestrictions()) {
+            for (Item item : BuiltInRegistries.ITEM) {
+                if (AsItems.isHardcorePlaceholder(item)) {
+                    continue;
+                }
+                if (StageItemRvHelper.modeFor(player, level, item) == StageItemRvHelper.Mode.HIDE) {
+                    shouldHide.add(item);
+                }
             }
         }
 
@@ -226,10 +240,24 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
         }
         List<ItemStack> stacks = new ArrayList<>();
         for (Item item : currentlyHiddenItems) {
+            if (AsItems.isHardcorePlaceholder(item)) {
+                continue;
+            }
             stacks.add(new ItemStack(item));
         }
-        manager.addIngredientsAtRuntime(VanillaTypes.ITEM_STACK, stacks);
-        currentlyHiddenItems.clear();
+        if (!stacks.isEmpty()) {
+            manager.addIngredientsAtRuntime(VanillaTypes.ITEM_STACK, stacks);
+        }
+        currentlyHiddenItems.removeIf(item -> !AsItems.isHardcorePlaceholder(item));
+    }
+
+    private static void ensureHardcorePlaceholderHidden(IIngredientManager manager) {
+        Item hardcore = AsItems.STAGE_LOCKED_HARDCORE.get();
+        if (currentlyHiddenItems.contains(hardcore)) {
+            return;
+        }
+        manager.removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, List.of(new ItemStack(hardcore)));
+        currentlyHiddenItems.add(hardcore);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

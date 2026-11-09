@@ -12,10 +12,15 @@
     "CrafterBlockMixin",
     "CampfireBlockEntityMixin",
     "ServerPlaceRecipeMixin",
-    "AbstractContainerMenuClickedMixin"
+    "AbstractContainerMenuClickedMixin",
+    "BoundTickingBlockEntityMixin",
+    "ServerLevelStopTickMixin"
   ],
   "client": [
     "BlockAppearanceMixin",
+    "BlockRenderShapeMixin",
+    "LevelRendererBreakOverlayMixin",
+    "ClientLevelBreakEffectMixin",
     "ItemStackHoverNameMixin",
     "ItemModelResolverMixin"
   ],

@@ -31,8 +31,7 @@ public final class StageItemLockDecorator implements IItemDecorator {
         RenderPipeline pipeline = RenderPipelines.GUI_TEXTURED;
         Identifier texture = StageItemRvHelper.textureFor(mode);
         int texSize = StageItemRvHelper.overlayTextureSize();
-        // overlay: light tint + lock (24) / fish (32) badge scaled into the 16×16 slot
-        guiGraphics.fill(xOffset, yOffset, xOffset + 16, yOffset + 16, 0x33202020);
+        // overlay: lock (24) / fish (32) badge scaled into the 16×16 slot (no darkening tint)
         guiGraphics.blit(pipeline, texture, xOffset, yOffset, 0f, 0f, 16, 16, texSize, texSize, texSize, texSize);
         return true;
     }

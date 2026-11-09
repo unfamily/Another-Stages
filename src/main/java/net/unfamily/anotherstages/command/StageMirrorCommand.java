@@ -48,11 +48,15 @@ public final class StageMirrorCommand {
         builder.then(Commands.literal("wiki").executes(StageMirrorCommand::executeWiki));
 
         CommandNode<CommandSourceStack> libraryRoot = dispatcher.getRoot().getChild("iska_lib_stage");
+        boolean mirroredEdit = false;
         if (libraryRoot != null) {
             for (CommandNode<CommandSourceStack> child : libraryRoot.getChildren()) {
                 String name = child.getName();
                 if ("call_action".equals(name)) {
                     continue;
+                }
+                if ("edit".equals(name)) {
+                    mirroredEdit = true;
                 }
                 builder.then(mirrorLiteral(name, child));
             }
@@ -64,7 +68,21 @@ public final class StageMirrorCommand {
             });
         }
 
+        // Fallback when Library has no edit (hook missing / older Library).
+        if (!mirroredEdit) {
+            builder.then(Commands.literal("edit").executes(StageMirrorCommand::executeEdit));
+        }
+
         dispatcher.register(builder);
+    }
+
+    private static int executeEdit(CommandContext<CommandSourceStack> context) {
+        if (!(context.getSource().getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) {
+            context.getSource().sendFailure(Component.translatable("commands.iska_utils.stage.error.need_player"));
+            return 0;
+        }
+        net.unfamily.anotherstages.network.AsNetworking.openStageGenerator(player);
+        return 1;
     }
 
     private static int executeWiki(CommandContext<CommandSourceStack> context) {

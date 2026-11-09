@@ -61,9 +61,19 @@ public final class AsConfig {
             .comment("Gate FastFurnace getRecipe cache.")
             .define("fastfurnace", true);
 
+    public static final ModConfigSpec.BooleanValue MIXIN_POLYMORPH = BUILDER
+            .comment("Filter stage-locked recipes from Polymorph+ conflict candidates / selectRecipe.")
+            .define("polymorph", true);
+
     public static final ModConfigSpec.BooleanValue MIXIN_BLOCK_APPEARANCE = BUILDER
             .comment("Client mimic appearance for stage_block.")
             .define("block_appearance", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_BLOCK_STOP_TICK = BUILDER
+            .comment(
+                    "DANGEROUS: honor stage_block stop_tick (skip BE / scheduled / random ticks).",
+                    "Disable if a compat crash occurs. Default true; stop_tick itself defaults false per rule.")
+            .define("block_stop_tick", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_GUI_SLOTS = BUILDER
             .comment("Gate AbstractContainerMenu.clicked for stage_gui blocked slots/items.")
@@ -85,11 +95,54 @@ public final class AsConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment(
+                        "Stage Generator GUI (/another_stages edit). Internal preference flags;",
+                        "kubejs_prompt_seed is a one-shot like Another Dynamics cableFacadesConfigSeed.")
+                .push("stage_generator");
+    }
+
+    public static final ModConfigSpec.BooleanValue PREFER_KUBEJS = BUILDER
+            .comment(
+                    "When true, Stage Generator writes fixed KubeJS server_scripts files;",
+                    "when false, writes JSON under the first iska_lib bootstrap.datapack_paths entry.",
+                    "Set by the first-open KubeJS preference dialog (or manually).")
+            .define("prefer_kubejs", false);
+
+    public static final ModConfigSpec.BooleanValue KUBEJS_PROMPT_SEED = BUILDER
+            .comment(
+                    "One-shot: when KubeJS is present and the generator opens, ask whether to manage",
+                    "stages with KubeJS, then set prefer_kubejs and clear this flag.",
+                    "Left true while KubeJS is absent so the prompt runs after KubeJS is added later.")
+            .define("kubejs_prompt_seed", true);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     private AsConfig() {}
+
+    /** Persist common config after programmatic {@link ModConfigSpec.ConfigValue#set} updates. */
+    public static void saveCommon() {
+        SPEC.save();
+    }
+
+    public static boolean preferKubejs() {
+        return loaded(PREFER_KUBEJS, false);
+    }
+
+    public static boolean kubejsPromptSeed() {
+        return loaded(KUBEJS_PROMPT_SEED, true);
+    }
+
+    public static void setPreferKubejs(boolean prefer) {
+        PREFER_KUBEJS.set(prefer);
+    }
+
+    public static void clearKubejsPromptSeed() {
+        KUBEJS_PROMPT_SEED.set(false);
+    }
 
     public static boolean loggingEnabled() {
         return loaded(LOGGING_ENABLED, false);
@@ -135,8 +188,16 @@ public final class AsConfig {
         return loaded(MIXIN_FASTFURNACE, true);
     }
 
+    public static boolean mixinPolymorph() {
+        return loaded(MIXIN_POLYMORPH, true);
+    }
+
     public static boolean mixinBlockAppearance() {
         return loaded(MIXIN_BLOCK_APPEARANCE, true);
+    }
+
+    public static boolean mixinBlockStopTick() {
+        return loaded(MIXIN_BLOCK_STOP_TICK, true);
     }
 
     public static boolean mixinGuiSlots() {

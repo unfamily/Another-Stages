@@ -1,6 +1,8 @@
 package net.unfamily.anotherstages.item;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.TriState;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -9,9 +11,11 @@ import net.unfamily.anotherstages.AnotherStages;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,6 +68,50 @@ public final class StageItemEvents {
             StageItemHandler.checkContainer(container, player);
         } catch (Exception e) {
             LOGGER.error("Error checking container: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Blocks world pickup when an active rule sets {@code can_pickup: false}.
+     */
+    @SubscribeEvent
+    public static void onItemPickup(ItemEntityPickupEvent.Pre event) {
+        if (!initialized || event.getPlayer().level().isClientSide()) {
+            return;
+        }
+        Player player = event.getPlayer();
+        ItemStack stack = event.getItemEntity().getItem();
+        if (stack.isEmpty()) {
+            return;
+        }
+        StageItemHandler.StageItemRule blocking =
+                StageItemHandler.findPickupBlockingRule(player, player.level(), stack.getItem());
+        if (blocking == null) {
+            return;
+        }
+        Component message = StageItemHandler.resolvePickupMessage(blocking);
+        if (message != null && player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.sendSystemMessage(message, true);
+        }
+        event.setCanPickup(TriState.FALSE);
+    }
+
+    /**
+     * Applies {@code cases: ["inventory"]} consequences; per-rule {@code inventory_ticks} throttle.
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!initialized) {
+            return;
+        }
+        Player player = event.getEntity();
+        if (player.level().isClientSide() || !(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        try {
+            StageItemHandler.applyInventoryCases(serverPlayer);
+        } catch (Exception e) {
+            LOGGER.error("Error applying inventory stage_item cases: {}", e.getMessage());
         }
     }
     

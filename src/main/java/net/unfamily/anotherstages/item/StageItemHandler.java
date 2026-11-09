@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +14,9 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.block.StageBlockHandler;
 import net.unfamily.anotherstages.util.StageIdMatchers;
+import org.jetbrains.annotations.Nullable;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.StagesLogic;
 import net.unfamily.iskalib.load.LoadJson;
@@ -541,15 +544,8 @@ public class StageItemHandler {
                                     ifRule.containersWhitelist = true; // Default
                                 }
                                 
-                                // Parse other case
-                                if (ifObj.has("other_case") && ifObj.get("other_case").isJsonArray()) {
-                                    for (JsonElement otherCaseElement : ifObj.getAsJsonArray("other_case")) {
-                                        if (otherCaseElement.isJsonPrimitive()) {
-                                            String otherCase = otherCaseElement.getAsString();
-                                            ifRule.otherCase.add(otherCase);
-                                        }
-                                    }
-                                }
+                                // Parse cases / other_case (merge; cases is preferred alias)
+                                parseCasesInto(ifObj, ifRule.otherCase);
                                 
                                 // Parse item list
                                 if (ifObj.has("items") && ifObj.get("items").isJsonArray()) {
@@ -578,14 +574,18 @@ public class StageItemHandler {
                         }
                     }
                     
-                    // Parse other case
-                    if (ruleObj.has("other_case") && ruleObj.get("other_case").isJsonArray()) {
-                        for (JsonElement otherCaseElement : ruleObj.getAsJsonArray("other_case")) {
-                            if (otherCaseElement.isJsonPrimitive()) {
-                                String otherCase = otherCaseElement.getAsString();
-                                rule.otherCase.add(otherCase);
-                            }
-                        }
+                    // Parse cases / other_case (merge; cases is preferred alias of other_case)
+                    parseCasesInto(ruleObj, rule.otherCase);
+
+                    // can_pickup defaults to true (legacy packs unchanged)
+                    rule.canPickup = !ruleObj.has("can_pickup") || ruleObj.get("can_pickup").getAsBoolean();
+                    // pickup_message: blank = silent (same model as stage_block break_message)
+                    if (ruleObj.has("pickup_message") && ruleObj.get("pickup_message").isJsonPrimitive()) {
+                        rule.pickupMessage = ruleObj.get("pickup_message").getAsString();
+                    }
+                    // inventory_ticks: omit or < 1 → default 30
+                    if (ruleObj.has("inventory_ticks") && ruleObj.get("inventory_ticks").isJsonPrimitive()) {
+                        rule.inventoryTicks = normalizeInventoryTicks(ruleObj.get("inventory_ticks").getAsInt());
                     }
 
                     // Custom tooltips (optional). Entries are lang keys or literal text.
@@ -734,10 +734,10 @@ public class StageItemHandler {
     }
     
     /**
-     * Gets the consequence to apply for a specific other_case
+     * Gets the consequence to apply for a specific case ({@code other_case} / {@code cases}).
      * @return the consequence string or null if no restriction applies
      */
-    private static String getOtherCaseConsequence(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
+    public static String getOtherCaseConsequence(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
         Item item = itemStack.getItem();
         
         for (StageItemRestriction restriction : allRestrictions()) {
@@ -939,17 +939,27 @@ public class StageItemHandler {
         return SCRIPT_ITEM_RESTRICTIONS.containsKey(id) || DATAPACK_ITEM_RESTRICTIONS.containsKey(id);
     }
 
+    /** Legacy click/hand cases expanded by {@code "all"}. Does not include {@code inventory}. */
     public static final String[] ALL_OTHER_CASES = {"right_click", "left_click", "main_hand", "off_hand"};
 
+    public static final String CASE_INVENTORY = "inventory";
+
+    /**
+     * Expands {@code "all"} to the four legacy click/hand cases.
+     * Preserves {@code inventory} if it was listed alongside {@code all}.
+     */
     public static void expandOtherCaseAll(List<String> otherCase) {
         if (otherCase == null || otherCase.isEmpty()) {
             return;
         }
         boolean hasAll = false;
+        boolean keepInventory = false;
         for (String s : otherCase) {
             if ("all".equalsIgnoreCase(s)) {
                 hasAll = true;
-                break;
+            }
+            if (CASE_INVENTORY.equalsIgnoreCase(s)) {
+                keepInventory = true;
             }
         }
         if (!hasAll) {
@@ -958,6 +968,172 @@ public class StageItemHandler {
         otherCase.clear();
         for (String s : ALL_OTHER_CASES) {
             otherCase.add(s);
+        }
+        if (keepInventory) {
+            otherCase.add(CASE_INVENTORY);
+        }
+    }
+
+    /** Merge JSON {@code cases} and legacy {@code other_case} into {@code target} (union, no dupes). */
+    public static void parseCasesInto(JsonObject obj, List<String> target) {
+        if (obj == null || target == null) {
+            return;
+        }
+        appendCaseArray(obj, "cases", target);
+        appendCaseArray(obj, "other_case", target);
+    }
+
+    private static void appendCaseArray(JsonObject obj, String key, List<String> target) {
+        if (!obj.has(key) || !obj.get(key).isJsonArray()) {
+            return;
+        }
+        for (JsonElement el : obj.getAsJsonArray(key)) {
+            if (!el.isJsonPrimitive()) {
+                continue;
+            }
+            String value = el.getAsString();
+            if (value != null && !value.isBlank() && !target.contains(value)) {
+                target.add(value);
+            }
+        }
+    }
+
+    public static final int DEFAULT_INVENTORY_TICKS = 30;
+    /** Lang key used when {@code .pickupMessage(true)} opts into default feedback. */
+    public static final String DEFAULT_PICKUP_MESSAGE = "message.another_stages.item_pickup_blocked";
+
+    public static int normalizeInventoryTicks(int ticks) {
+        return ticks < 1 ? DEFAULT_INVENTORY_TICKS : ticks;
+    }
+
+    /**
+     * {@code true} unless an active stage_item rule sets {@code can_pickup: false} for this item.
+     */
+    public static boolean allowsPickup(Player player, Level level, Item item) {
+        return findPickupBlockingRule(player, level, item) == null;
+    }
+
+    /**
+     * First active rule that denies pickup for this item, or {@code null} if pickup is allowed.
+     */
+    @Nullable
+    public static StageItemRule findPickupBlockingRule(Player player, Level level, Item item) {
+        if (item == null || player == null || level == null) {
+            return null;
+        }
+        for (StageItemRule rule : findActiveRules(player, level, item)) {
+            if (!rule.canPickup) {
+                return rule;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolved pickup feedback, or {@code null} when silent.
+     * Component (Kube Text) wins; blank string = off; otherwise lang key / literal.
+     */
+    @Nullable
+    public static Component resolvePickupMessage(StageItemRule rule) {
+        if (rule == null) {
+            return null;
+        }
+        if (rule.pickupMessageComponent != null) {
+            return rule.pickupMessageComponent;
+        }
+        if (rule.pickupMessage == null || rule.pickupMessage.isBlank()) {
+            return null;
+        }
+        return StageBlockHandler.resolveText(rule.pickupMessage);
+    }
+
+    /**
+     * Applies {@code cases: ["inventory"]} consequences to the player's own inventory
+     * (items + armor + offhand). Throttle is per-rule via {@link StageItemRule#inventoryTicks}.
+     * Does not touch open container/chest slots.
+     */
+    public static void applyInventoryCases(ServerPlayer player) {
+        if (player == null || player.level().isClientSide() || !hasLoadedRestrictions()) {
+            return;
+        }
+        Level level = player.level();
+        int tick = player.tickCount;
+        var inv = player.getInventory();
+
+        for (StageItemRestriction restriction : allRestrictions()) {
+            for (StageItemRule rule : restriction.restrictions) {
+                int interval = normalizeInventoryTicks(rule.inventoryTicks);
+                if (tick % interval != 0) {
+                    continue;
+                }
+
+                if (rule.otherCase.contains(CASE_INVENTORY)
+                        && checkStageConditions(rule, player, level)) {
+                    applyInventoryForMatchers(player, inv, rule.items, rule.exclude, rule.consequence);
+                }
+
+                if (("DEF_OR".equals(rule.stagesLogic) || "DEF_AND".equals(rule.stagesLogic))
+                        && rule.ifConditions != null && !rule.ifConditions.isEmpty()) {
+                    for (StageItemIfRule ifRule : rule.ifConditions) {
+                        if (!ifRule.otherCase.contains(CASE_INVENTORY)) {
+                            continue;
+                        }
+                        if (!checkIfRuleConditions(ifRule, rule, player, level)) {
+                            continue;
+                        }
+                        applyInventoryForMatchers(player, inv, ifRule.items, ifRule.exclude, ifRule.consequence);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void applyInventoryForMatchers(
+            ServerPlayer player,
+            net.minecraft.world.entity.player.Inventory inv,
+            List<String> items,
+            List<String> exclude,
+            String consequence) {
+        if (consequence == null || consequence.isBlank()) {
+            return;
+        }
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack stack = inv.getItem(i);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            if (!isItemAffected(stack.getItem(), items, exclude)) {
+                continue;
+            }
+            applyInventorySlotConsequence(player, i, consequence);
+        }
+    }
+
+    private static boolean applyInventorySlotConsequence(ServerPlayer player, int slot, String consequence) {
+        var inv = player.getInventory();
+        ItemStack stack = inv.getItem(slot).copy();
+        if (stack.isEmpty()) {
+            return false;
+        }
+        switch (consequence.toLowerCase()) {
+            case "drop":
+            case "block_drop":
+                player.drop(stack, false);
+                inv.setItem(slot, ItemStack.EMPTY);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                        "message.iska_utils.item_restriction.dropped"), true);
+                return true;
+            case "delete":
+            case "block_delete":
+                inv.setItem(slot, ItemStack.EMPTY);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                        "message.iska_utils.item_restriction.deleted"), true);
+                return true;
+            case "block":
+                // Inventory case: block alone does not eject; packdevs should use drop/delete.
+                return false;
+            default:
+                return false;
         }
     }
 
@@ -1008,7 +1184,28 @@ public class StageItemHandler {
         public List<String> exclude = new ArrayList<>();
         public String consequence = "drop";
         public List<StageItemIfRule> ifConditions = new ArrayList<>();
+        /**
+         * Interaction / inventory cases ({@code cases} JSON alias of legacy {@code other_case}).
+         * Values: right_click, left_click, main_hand, off_hand, inventory; {@code all} expands to the four click/hand cases only.
+         */
         public List<String> otherCase = new ArrayList<>();
+        /**
+         * When false, the player cannot pick up matching ItemEntities while this rule is active.
+         * Default true (legacy packs unchanged).
+         */
+        public boolean canPickup = true;
+        /**
+         * Pickup deny action-bar text: lang key (dotted, no spaces) or literal.
+         * Default blank = silent; use {@link StageItemHandler#DEFAULT_PICKUP_MESSAGE} via {@code .pickupMessage(true)}.
+         */
+        public String pickupMessage = "";
+        /** Kube {@code Text}/{@code Component} pickup message; wins over {@link #pickupMessage} when set. */
+        public Component pickupMessageComponent = null;
+        /**
+         * How often {@code inventory} case scans this player's inventory (server ticks).
+         * Default {@link StageItemHandler#DEFAULT_INVENTORY_TICKS}; values {@code < 1} normalize to default.
+         */
+        public int inventoryTicks = DEFAULT_INVENTORY_TICKS;
         /** Optional custom tooltip lines (lang key or literal). Empty if omitted. */
         public List<String> tooltips = new ArrayList<>();
         /** When true, default item tooltips are cleared before custom ones are added. */
