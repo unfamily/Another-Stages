@@ -205,9 +205,11 @@ public final class StageRecipeHandler {
                 }
                 JsonObject stageObj = stageElement.getAsJsonObject();
                 StageCondition condition = new StageCondition();
-                condition.stageType = stageObj.has("stage_type") ? stageObj.get("stage_type").getAsString() : "player";
-                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString() : "";
-                condition.is = !stageObj.has("is") || stageObj.get("is").getAsBoolean();
+                condition.stageType = stageObj.has("stage_type")
+                        ? stageObj.get("stage_type").getAsString().trim().toLowerCase(java.util.Locale.ROOT)
+                        : "player";
+                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString().trim() : "";
+                condition.is = stageObj.has("is") && stageObj.get("is").getAsBoolean();
                 rule.stages.add(condition);
             }
         }
@@ -320,12 +322,20 @@ public final class StageRecipeHandler {
     }
 
     private static boolean checkConditionClient(StageCondition condition) {
-        String type = condition.stageType == null ? "player" : condition.stageType;
+        String type = normalizeStageType(condition.stageType);
+        String stage = condition.stage == null ? "" : condition.stage.trim();
         return switch (type) {
-            case "world" -> net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(condition.stage);
-            case "team" -> net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(condition.stage);
-            default -> net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(condition.stage);
+            case "world" -> net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(stage);
+            case "team" -> net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(stage);
+            default -> net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(stage);
         };
+    }
+
+    private static String normalizeStageType(@Nullable String stageType) {
+        if (stageType == null || stageType.isBlank()) {
+            return "player";
+        }
+        return stageType.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private static void readStringList(JsonObject obj, String key, List<String> out) {
@@ -345,12 +355,31 @@ public final class StageRecipeHandler {
     }
 
     public static Set<String> collectReferencedStages() {
+        return collectReferencedStages(null);
+    }
+
+    /** Stages referenced by loaded rules; if {@code stageType} is set, only that type. */
+    public static Set<String> collectReferencedStages(@Nullable String stageType) {
+        String want = stageType == null || stageType.isBlank()
+                ? null
+                : stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("team_player".equals(want)) {
+            want = "team";
+        }
         Set<String> stages = new HashSet<>();
         for (StageRecipeRule rule : allRules()) {
             for (StageCondition c : rule.stages) {
-                if (c.stage != null && !c.stage.isBlank()) {
-                    stages.add(c.stage.trim());
+                if (c.stage == null || c.stage.isBlank()) {
+                    continue;
                 }
+                String type = normalizeStageType(c.stageType);
+                if ("team_player".equals(type)) {
+                    type = "team";
+                }
+                if (want != null && !want.equals(type)) {
+                    continue;
+                }
+                stages.add(c.stage.trim());
             }
         }
         return stages;
@@ -496,9 +525,6 @@ public final class StageRecipeHandler {
         if (rule.stages.isEmpty()) {
             return true;
         }
-        if (onlinePlayer == null && hasPlayerScopedCondition(rule)) {
-            return true;
-        }
         boolean and = !"OR".equalsIgnoreCase(rule.stagesLogic);
         if (and) {
             for (StageCondition condition : rule.stages) {
@@ -518,31 +544,38 @@ public final class StageRecipeHandler {
         return false;
     }
 
-    private static boolean hasPlayerScopedCondition(StageRecipeRule rule) {
-        for (StageCondition condition : rule.stages) {
-            String type = condition.stageType == null ? "player" : condition.stageType;
-            if ("player".equals(type)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static boolean checkCondition(
             StageCondition condition,
             @Nullable UUID ownerUuid,
             @Nullable Level level,
             @Nullable ServerPlayer onlinePlayer) {
-        String type = condition.stageType == null ? "player" : condition.stageType;
+        String type = normalizeStageType(condition.stageType);
+        String stage = condition.stage == null ? "" : condition.stage.trim();
+        if (stage.isEmpty()) {
+            return false;
+        }
         return switch (type) {
-            case "world" -> level != null && !level.isClientSide() && StageRegistry.worldHasStage(level, condition.stage);
+            case "world" -> level != null && !level.isClientSide() && StageRegistry.worldHasStage(level, stage);
             case "team" -> {
-                if (ownerUuid == null || level == null || level.isClientSide() || !(level instanceof ServerLevel serverLevel)) {
+                if (onlinePlayer != null) {
+                    yield StageRegistry.playerTeamHasStage(onlinePlayer, stage);
+                }
+                if (ownerUuid == null || level == null || level.isClientSide()
+                        || !(level instanceof ServerLevel serverLevel)) {
                     yield false;
                 }
-                yield StageRegistry.getInstance(serverLevel.getServer()).hasPlayerTeamStage(ownerUuid, condition.stage);
+                yield StageRegistry.getInstance(serverLevel.getServer()).hasPlayerTeamStage(ownerUuid, stage);
             }
-            default -> onlinePlayer != null && StageRegistry.playerHasStage(onlinePlayer, condition.stage);
+            default -> {
+                if (onlinePlayer != null) {
+                    yield StageRegistry.playerHasStage(onlinePlayer, stage);
+                }
+                if (ownerUuid == null || level == null || level.isClientSide()
+                        || !(level instanceof ServerLevel serverLevel) || serverLevel.getServer() == null) {
+                    yield false;
+                }
+                yield StageRegistry.getInstance(serverLevel.getServer()).hasPlayerStage(ownerUuid, stage);
+            }
         };
     }
 

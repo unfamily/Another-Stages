@@ -138,7 +138,13 @@ configurations {
 
 dependencies {
     // Required: Iskandert's Library (local build preferred)
-    def iskaLibJar = file('../Iskandert-Library/build/libs/iska_lib-1.14.0.0.0.jar')
+    def iskaLibJar = file('../Iskandert-Library/build/libs/iska_lib-1.14.0.1.0.jar')
+    if (!iskaLibJar.exists()) {
+        iskaLibJar = file('../Iskandert-Library/build/libs/iska_lib-1.14.0.0.0.jar')
+    }
+    if (!iskaLibJar.exists()) {
+        iskaLibJar = file('libs/iska_lib-1.14.0.1.0.jar')
+    }
     if (!iskaLibJar.exists()) {
         iskaLibJar = file('libs/iska_lib-1.14.0.0.0.jar')
     }
@@ -227,9 +233,9 @@ dependencies {
     // Fast*: compileAlways. Runtime: FastFurnace ON (gate under test); FastWorkbench OFF so vanilla crafting table is tested.
     compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
-    localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
-    // localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
+    localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
+    localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
 
     // KubeJS — compile API from Latvian Maven; CurseMaven runtimes (Rhino + BAT required)
     compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"

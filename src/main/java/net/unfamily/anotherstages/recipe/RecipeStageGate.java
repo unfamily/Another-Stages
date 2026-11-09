@@ -16,9 +16,10 @@ import java.util.UUID;
  * Convenience gates for vanilla/mixin call sites.
  * <p>
  * <b>Machines / process blocks</b> (furnace, campfire, crafter, mod BEs): often have
- * <b>no owner</b>. Missing owner must never skip a stage lock — evaluate AS rules directly
- * (world stages apply; player-scoped rules stay fail-closed when no online player).
- * With an owner UUID, use Library {@link RecipeBlockBridge}.
+ * <b>no owner</b>. Missing owner must never skip a stage lock — evaluate AS rules
+ * (world stages apply; player-scoped conditions resolve as missing when no online player).
+ * With an owner UUID, use Library {@link RecipeBlockBridge} (which also consults providers
+ * when owner is null).
  */
 public final class RecipeStageGate {
     private RecipeStageGate() {}

@@ -27,7 +27,17 @@ public final class StageGuiBootstrap {
             return;
         }
         installed = true;
-        StageCatalog.addContributor(StageGuiHandler::collectReferencedStages);
+        StageCatalog.addContributor(new StageCatalog.Contributor() {
+            @Override
+            public java.util.Collection<String> knownStages() {
+                return StageGuiHandler.collectReferencedStages();
+            }
+
+            @Override
+            public java.util.Collection<String> knownStagesForType(String stageType) {
+                return StageGuiHandler.collectReferencedStages(stageType);
+            }
+        });
         StageReloadHooks.Listener previous = StageReloadHooks.getListener();
         StageReloadHooks.setListener(source -> {
             int result = previous != null ? previous.reloadStageBlock(source) : 1;

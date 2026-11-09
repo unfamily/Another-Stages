@@ -22,7 +22,7 @@ public final class StageBindings {
         return StageRegistry.playerHasStage(player, stage);
     }
 
-    /** Player's personal stages plus their team stages (Library FTB sync). */
+    /** Team stages only for the player's shop/FTB team (Library TeamStageData). Not personal stages. */
     public static boolean teamHasStage(@Nullable Player player, @Nullable String stage) {
         if (player == null || stage == null || stage.isEmpty()) {
             return false;

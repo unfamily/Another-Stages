@@ -22,7 +22,7 @@ public final class AsNetworking {
     private AsNetworking() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar("1").optional();
+        PayloadRegistrar registrar = event.registrar("1");
         registrar.playToClient(
                 StageSyncS2CPayload.TYPE,
                 StageSyncS2CPayload.STREAM_CODEC,

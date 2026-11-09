@@ -1,7 +1,6 @@
 package net.unfamily.anotherstages.kubejs;
 
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.fml.ModList;
 import net.unfamily.anotherstages.AnotherStages;
@@ -48,9 +47,6 @@ public final class KubejsStageSoftReload {
                 return false;
             }
             scriptManager.reload();
-            source.sendSuccess(
-                    () -> Component.translatable("commands.another_stages.kubejs_stages_reloaded"),
-                    true);
             if (AsConfig.loggingEnabled()) {
                 AnotherStages.LOGGER.info("Soft-reloaded KubeJS server scripts (Another Stages script restrictions)");
             }

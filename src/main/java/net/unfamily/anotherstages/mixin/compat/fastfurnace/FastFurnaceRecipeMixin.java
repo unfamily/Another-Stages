@@ -3,7 +3,6 @@ package net.unfamily.anotherstages.mixin.compat.fastfurnace;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -24,10 +23,6 @@ public abstract class FastFurnaceRecipeMixin {
     @Shadow(remap = false)
     protected RecipeHolder<?> curRecipe;
 
-    /** FastFurnace {@code @Unique} field merged onto the furnace BE. */
-    @Shadow(remap = false)
-    protected ItemStack failedMatch;
-
     @WrapMethod(
             method = "getRecipe(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/world/item/crafting/RecipeHolder;",
             remap = false)
@@ -46,10 +41,9 @@ public abstract class FastFurnaceRecipeMixin {
         if (!blocked) {
             return holder;
         }
-        // Match FastFurnace early-out: sticky failedMatch until the input stack changes.
+        // Do not sticky-poison failedMatch: stage unlock must re-evaluate next tick without
+        // requiring the input stack to change.
         this.curRecipe = null;
-        ItemStack input = ((AbstractFurnaceBlockEntity) (Object) this).getItem(0);
-        this.failedMatch = input.isEmpty() ? ItemStack.EMPTY : input.copy();
         return null;
     }
 }

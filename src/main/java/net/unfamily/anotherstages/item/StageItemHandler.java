@@ -102,6 +102,16 @@ public class StageItemHandler {
      * Collects all stage ids referenced by loaded item restrictions (for command suggestions).
      */
     public static java.util.Set<String> collectReferencedStages() {
+        return collectReferencedStages(null);
+    }
+
+    public static java.util.Set<String> collectReferencedStages(@org.jetbrains.annotations.Nullable String stageType) {
+        String want = stageType == null || stageType.isBlank()
+                ? null
+                : stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("team_player".equals(want)) {
+            want = "team";
+        }
         java.util.LinkedHashSet<String> stages = new java.util.LinkedHashSet<>();
         for (StageItemRestriction restriction : allRestrictions()) {
             if (restriction == null || restriction.restrictions == null) {
@@ -112,9 +122,19 @@ public class StageItemHandler {
                     continue;
                 }
                 for (StageCondition condition : rule.stages) {
-                    if (condition != null && condition.stage != null && !condition.stage.isBlank()) {
-                        stages.add(condition.stage.trim());
+                    if (condition == null || condition.stage == null || condition.stage.isBlank()) {
+                        continue;
                     }
+                    String type = condition.stageType == null || condition.stageType.isBlank()
+                            ? "player"
+                            : condition.stageType.trim().toLowerCase(java.util.Locale.ROOT);
+                    if ("team_player".equals(type)) {
+                        type = "team";
+                    }
+                    if (want != null && !want.equals(type)) {
+                        continue;
+                    }
+                    stages.add(condition.stage.trim());
                 }
             }
         }
@@ -283,14 +303,18 @@ public class StageItemHandler {
      * Checks a single stage condition
      */
     private static boolean checkSingleStageCondition(StageCondition condition, ServerPlayer player, Level level) {
-        if ("player".equals(condition.stageType)) {
-            return StageRegistry.playerHasStage(player, condition.stage);
-        } else if ("world".equals(condition.stageType)) {
-            return StageRegistry.worldHasStage(level, condition.stage);
-        } else if ("team".equals(condition.stageType)) {
-            return StageRegistry.playerTeamHasStage(player, condition.stage);
+        String type = condition.stageType == null || condition.stageType.isBlank()
+                ? "player"
+                : condition.stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        String stage = condition.stage == null ? "" : condition.stage.trim();
+        if (stage.isEmpty()) {
+            return false;
         }
-        return false;
+        return switch (type) {
+            case "world" -> StageRegistry.worldHasStage(level, stage);
+            case "team" -> StageRegistry.playerTeamHasStage(player, stage);
+            default -> StageRegistry.playerHasStage(player, stage);
+        };
     }
     
     /**
@@ -424,9 +448,11 @@ public class StageItemHandler {
                             if (stageElement.isJsonObject()) {
                                 JsonObject stageObj = stageElement.getAsJsonObject();
                                 StageCondition condition = new StageCondition();
-                                condition.stageType = stageObj.has("stage_type") ? stageObj.get("stage_type").getAsString() : "player";
-                                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString() : "";
-                                condition.is = !stageObj.has("is") || stageObj.get("is").getAsBoolean();
+                                condition.stageType = stageObj.has("stage_type")
+                                        ? stageObj.get("stage_type").getAsString().trim().toLowerCase(java.util.Locale.ROOT)
+                                        : "player";
+                                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString().trim() : "";
+                                condition.is = stageObj.has("is") && stageObj.get("is").getAsBoolean();
                                 rule.stages.add(condition);
                             }
                         }
@@ -866,13 +892,15 @@ public class StageItemHandler {
 
     private static boolean checkSingleStageConditionClient(StageCondition condition, Player player, Level level) {
         // Library static checks are server-only; use synced client cache for RV / tooltips.
-        if ("world".equals(condition.stageType)) {
-            return net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(condition.stage);
-        }
-        if ("team".equals(condition.stageType)) {
-            return net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(condition.stage);
-        }
-        return net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(condition.stage);
+        String type = condition.stageType == null || condition.stageType.isBlank()
+                ? "player"
+                : condition.stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        String stage = condition.stage == null ? "" : condition.stage.trim();
+        return switch (type) {
+            case "world" -> net.unfamily.anotherstages.client.ClientStageCache.hasWorldStage(stage);
+            case "team" -> net.unfamily.anotherstages.client.ClientStageCache.hasTeamStage(stage);
+            default -> net.unfamily.anotherstages.client.ClientStageCache.hasPlayerStage(stage);
+        };
     }
 
     private static java.util.Collection<StageItemRestriction> allRestrictions() {
@@ -1028,6 +1056,7 @@ public class StageItemHandler {
     public static class StageCondition {
         public String stageType = "player";
         public String stage = "";
-        public boolean is = true;
+        /** Lock while stage is missing when false (default); lock while present when true. */
+        public boolean is = false;
     }
 } 

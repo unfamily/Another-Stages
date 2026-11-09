@@ -108,9 +108,9 @@ public final class KubeStageMaps {
             return null;
         }
         StageItemHandler.StageCondition c = new StageItemHandler.StageCondition();
-        c.stageType = str(map, "stage_type", "player");
-        c.stage = str(map, "stage", "");
-        c.is = bool(map, "is", true);
+        c.stageType = str(map, "stage_type", "player").trim().toLowerCase(java.util.Locale.ROOT);
+        c.stage = str(map, "stage", "").trim();
+        c.is = bool(map, "is", false);
         return c;
     }
 
@@ -119,9 +119,9 @@ public final class KubeStageMaps {
             return null;
         }
         StageCondition c = new StageCondition();
-        c.stageType = str(map, "stage_type", "player");
-        c.stage = str(map, "stage", "");
-        c.is = bool(map, "is", true);
+        c.stageType = str(map, "stage_type", "player").trim().toLowerCase(java.util.Locale.ROOT);
+        c.stage = str(map, "stage", "").trim();
+        c.is = bool(map, "is", false);
         return c;
     }
 

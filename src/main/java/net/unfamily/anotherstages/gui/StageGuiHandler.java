@@ -128,12 +128,32 @@ public final class StageGuiHandler {
     }
 
     public static Set<String> collectReferencedStages() {
+        return collectReferencedStages(null);
+    }
+
+    public static Set<String> collectReferencedStages(@Nullable String stageType) {
+        String want = stageType == null || stageType.isBlank()
+                ? null
+                : stageType.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("team_player".equals(want)) {
+            want = "team";
+        }
         Set<String> stages = new HashSet<>();
         for (StageGuiRule rule : allRules()) {
             for (StageCondition c : rule.stages) {
-                if (c.stage != null && !c.stage.isBlank()) {
-                    stages.add(c.stage.trim());
+                if (c.stage == null || c.stage.isBlank()) {
+                    continue;
                 }
+                String type = c.stageType == null || c.stageType.isBlank()
+                        ? "player"
+                        : c.stageType.trim().toLowerCase(java.util.Locale.ROOT);
+                if ("team_player".equals(type)) {
+                    type = "team";
+                }
+                if (want != null && !want.equals(type)) {
+                    continue;
+                }
+                stages.add(c.stage.trim());
             }
         }
         return stages;
@@ -149,9 +169,11 @@ public final class StageGuiHandler {
                 }
                 JsonObject stageObj = stageElement.getAsJsonObject();
                 StageCondition condition = new StageCondition();
-                condition.stageType = stageObj.has("stage_type") ? stageObj.get("stage_type").getAsString() : "player";
-                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString() : "";
-                condition.is = !stageObj.has("is") || stageObj.get("is").getAsBoolean();
+                condition.stageType = stageObj.has("stage_type")
+                        ? stageObj.get("stage_type").getAsString().trim().toLowerCase(java.util.Locale.ROOT)
+                        : "player";
+                condition.stage = stageObj.has("stage") ? stageObj.get("stage").getAsString().trim() : "";
+                condition.is = stageObj.has("is") && stageObj.get("is").getAsBoolean();
                 rule.stages.add(condition);
             }
         }

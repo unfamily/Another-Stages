@@ -4,5 +4,6 @@ package net.unfamily.anotherstages.recipe;
 public final class StageCondition {
     public String stageType = "player";
     public String stage = "";
-    public boolean is = true;
+    /** Lock while stage is missing when false (default); lock while present when true. */
+    public boolean is = false;
 }

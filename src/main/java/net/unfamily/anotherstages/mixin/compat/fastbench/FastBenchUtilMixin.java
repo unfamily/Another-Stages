@@ -2,6 +2,7 @@ package net.unfamily.anotherstages.mixin.compat.fastbench;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import dev.shadowsoffire.fastbench.net.RecipePayload;
 import dev.shadowsoffire.fastbench.util.CraftingInventoryExt;
 import dev.shadowsoffire.fastbench.util.FastBenchUtil;
 import net.minecraft.server.level.ServerLevel;
@@ -12,6 +13,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,10 +39,11 @@ public abstract class FastBenchUtilMixin {
         }
         RecipeHolder<?> used = result.getRecipeUsed();
         if (used != null
-                && player instanceof ServerPlayer
+                && player instanceof ServerPlayer serverPlayer
                 && RecipeStageGate.isBlockedForPlayer(used.id(), player, level)) {
             result.setItem(0, ItemStack.EMPTY);
             result.setRecipeUsed(null);
+            PacketDistributor.sendToPlayer(serverPlayer, new RecipePayload(ItemStack.EMPTY));
         }
     }
 
