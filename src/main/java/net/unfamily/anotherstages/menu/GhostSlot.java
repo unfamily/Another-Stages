@@ -7,7 +7,8 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Display / filter slot: holding an item sets a copy without consuming the carried stack
- * (handled by {@link StageGeneratorMenu#clicked}).
+ * (handled by {@link StageGeneratorMenu#clicked}). Always active for JEI; parked off-screen
+ * when the generator hides the inventory UI.
  */
 public final class GhostSlot extends Slot {
     private final StageGeneratorMenu menu;
@@ -19,7 +20,8 @@ public final class GhostSlot extends Slot {
 
     @Override
     public boolean isActive() {
-        return menu.slotsVisible();
+        // Keep active so recipe viewers treat this container as a normal inventory screen.
+        return true;
     }
 
     @Override
@@ -34,7 +36,7 @@ public final class GhostSlot extends Slot {
 
     @Override
     public boolean mayPickup(Player player) {
-        return true;
+        return menu.slotsVisible();
     }
 
     @Override

@@ -7,9 +7,11 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 /**
@@ -27,23 +29,27 @@ public final class AsButton extends AbstractWidget {
     private static final int TEXT = 0xFFE8E8F0;
     private static final int TEXT_DISABLED = 0xFF777788;
 
-    private final Runnable onPress;
+    private final @Nullable Runnable onPress;
+    /** Left = +1, right = -1 for multi-mode cycle buttons. */
+    private final @Nullable IntConsumer onCycle;
     private final boolean iconStyle;
     private @Nullable Supplier<Boolean> activeWhen;
 
-    private AsButton(int width, int height, Component message, Runnable onPress, boolean iconStyle) {
+    private AsButton(int width, int height, Component message, @Nullable Runnable onPress,
+                     @Nullable IntConsumer onCycle, boolean iconStyle) {
         super(0, 0, width, height, message);
         this.onPress = onPress;
+        this.onCycle = onCycle;
         this.iconStyle = iconStyle;
     }
 
     public static AsButton text(int width, Component message, Runnable onPress) {
-        return new AsButton(width, HEIGHT, message, onPress, false);
+        return new AsButton(width, HEIGHT, message, onPress, null, false);
     }
 
     /** Compact button (ShopEdit-style side actions). */
     public static AsButton text(int width, int height, Component message, Runnable onPress) {
-        return new AsButton(width, height, message, onPress, false);
+        return new AsButton(width, height, message, onPress, null, false);
     }
 
     public static AsButton text(int width, int height, Component message, Runnable onPress, @Nullable Component tooltip) {
@@ -62,9 +68,16 @@ public final class AsButton extends AbstractWidget {
         return button;
     }
 
+    /**
+     * Multi-mode selector: left click cycles forward (+1), right click cycles backward (-1).
+     */
+    public static AsButton cycle(int width, int height, Component message, IntConsumer delta) {
+        return new AsButton(width, height, message, null, delta, false);
+    }
+
     /** Compact square control showing a short glyph. */
     public static AsButton icon(Component glyph, Component tooltip, Runnable onPress) {
-        AsButton button = new AsButton(ICON_SIZE, ICON_SIZE, glyph, onPress, true);
+        AsButton button = new AsButton(ICON_SIZE, ICON_SIZE, glyph, onPress, null, true);
         button.setTooltip(Tooltip.create(tooltip));
         return button;
     }
@@ -81,11 +94,34 @@ public final class AsButton extends AbstractWidget {
     }
 
     @Override
+    protected boolean isValidClickButton(MouseButtonInfo buttonInfo) {
+        if (onCycle != null) {
+            int b = buttonInfo.button();
+            return b == 0 || b == 1;
+        }
+        return super.isValidClickButton(buttonInfo);
+    }
+
+    @Override
     public void onClick(MouseButtonEvent event, boolean doubleClick) {
         if (activeWhen != null) {
             refreshActive();
         }
         if (!this.active) {
+            return;
+        }
+        if (onCycle != null) {
+            int button = event.button();
+            if (button == 0) {
+                AsUi.playClick();
+                onCycle.accept(1);
+            } else if (button == 1) {
+                AsUi.playClick();
+                onCycle.accept(-1);
+            }
+            return;
+        }
+        if (event.button() != 0 || onPress == null) {
             return;
         }
         AsUi.playClick();

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
 /**
@@ -139,8 +140,8 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
         addEntry(new ToggleEntry(labelKey, get, set), ROW_H);
     }
 
-    public void addCycle(String labelKey, Supplier<String> get, Runnable cycle) {
-        addEntry(new CycleEntry(labelKey, get, cycle), ROW_H);
+    public void addCycle(String labelKey, Supplier<String> get, IntConsumer cycleDelta) {
+        addEntry(new CycleEntry(labelKey, get, cycleDelta), ROW_H);
     }
 
     public void addActionButton(Component label, Runnable action) {
@@ -269,10 +270,10 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
         private final AsButton button;
         private final Supplier<String> get;
 
-        CycleEntry(String labelKey, Supplier<String> get, Runnable cycle) {
+        CycleEntry(String labelKey, Supplier<String> get, IntConsumer cycleDelta) {
             this.label = new StringWidget(100, 12, Component.translatable(labelKey), font);
             this.get = get;
-            this.button = AsButton.text(110, Component.literal(get.get()), cycle);
+            this.button = AsButton.cycle(110, AsButton.HEIGHT, Component.literal(get.get()), cycleDelta);
         }
 
         @Override
@@ -370,8 +371,8 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
             this.icon = icon == null ? ItemStack.EMPTY : icon;
             this.glyph = glyph;
             this.ready = ready;
-            this.badge = new StringWidget(70, 12, badgeText, font);
-            this.open = AsButton.text(Math.max(80, getRowWidth() - 100), 14, titleText, onClick);
+            this.badge = new StringWidget(64, 12, badgeText, font);
+            this.open = AsButton.text(80, 14, titleText, onClick);
         }
 
         @Override
@@ -389,14 +390,18 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
             } else if (glyph != null) {
                 graphics.text(font, glyph, iconX + 6, iconY + 5, 0xFFE8E8F0, false);
             }
-            open.setWidth(Math.max(80, w - 100));
+            final int badgeW = 64;
+            final int gap = 4;
+            int titleW = Math.max(40, w - 24 - badgeW - gap);
+            open.setWidth(titleW);
             open.setPosition(x + 24, y + 4);
             open.extractRenderState(graphics, mouseX, mouseY, a);
+            badge.setWidth(badgeW);
             badge.setMessage(Component.translatable(ready
                             ? "screen.another_stages.stage_generator.complete.ready"
                             : "screen.another_stages.stage_generator.complete.incomplete")
                     .withStyle(s -> s.withColor(ready ? 0x66CC66 : 0xCC8866)));
-            badge.setPosition(x + w - 72, y + 6);
+            badge.setPosition(x + w - badgeW, y + 6);
             badge.extractRenderState(graphics, mouseX, mouseY, a);
         }
 

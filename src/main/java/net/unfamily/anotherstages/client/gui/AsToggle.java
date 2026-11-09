@@ -12,16 +12,16 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
- * ACM-style On/Off chip (40×16): green when on, grey when off.
+ * ACM-style true/false chip (40×16): green when true, red when false.
  */
 public final class AsToggle extends AbstractWidget {
     public static final int WIDTH = 40;
     public static final int HEIGHT = 16;
 
-    private static final int BG_ON = 0xFF3A8F4A;
-    private static final int BG_OFF = 0xFF555555;
-    private static final int BORDER_ON = 0xFF6FCF7F;
-    private static final int BORDER_OFF = 0xFF888888;
+    private static final int BG_TRUE = 0xFF3A8F4A;
+    private static final int BG_FALSE = 0xFF8F3A3A;
+    private static final int BORDER_TRUE = 0xFF6FCF7F;
+    private static final int BORDER_FALSE = 0xFFCF6F6F;
 
     private final BooleanSupplier value;
     private final Consumer<Boolean> onToggle;
@@ -45,8 +45,8 @@ public final class AsToggle extends AbstractWidget {
     @Override
     protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         boolean on = isOn();
-        int bg = on ? BG_ON : BG_OFF;
-        int border = on ? BORDER_ON : BORDER_OFF;
+        int bg = on ? BG_TRUE : BG_FALSE;
+        int border = on ? BORDER_TRUE : BORDER_FALSE;
         int x0 = getX();
         int y0 = getY();
         int x1 = x0 + getWidth();
@@ -59,8 +59,8 @@ public final class AsToggle extends AbstractWidget {
 
         Font font = Minecraft.getInstance().font;
         String label = Component.translatable(on
-                ? "screen.another_stages.stage_generator.on"
-                : "screen.another_stages.stage_generator.off").getString();
+                ? "screen.another_stages.stage_generator.bool.true"
+                : "screen.another_stages.stage_generator.bool.false").getString();
         int tw = font.width(label);
         graphics.text(font, label, x0 + (getWidth() - tw) / 2, y0 + 4, 0xFFFFFFFF);
     }

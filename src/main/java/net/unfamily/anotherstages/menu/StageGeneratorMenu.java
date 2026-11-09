@@ -12,6 +12,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Stage Generator container (ShopEdit footprint 300×240): ghost + player inventory.
+ * Slot.x/y are final in 26.x, so slots stay parked off-screen (always {@code isActive})
+ * so JEI/EMI/REI keep a normal container. The screen draws/clicks the inv UI only when
+ * matcher-entry item mode is active, using {@link #visualSlotX(int)} / {@link #visualSlotY(int)}.
  */
 public final class StageGeneratorMenu extends AbstractContainerMenu {
     public static final int GUI_WIDTH = 300;
@@ -21,55 +24,49 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
     public static final int PLAYER_INV_START = 1;
     public static final int PLAYER_INV_COUNT = 36;
 
-    /** Aligned with Utils ShopEdit inventory column. */
     public static final int PLAYER_INV_X = 20;
     public static final int PLAYER_INV_Y = 154;
     public static final int GHOST_X = PLAYER_INV_X;
     public static final int GHOST_Y = PLAYER_INV_Y - 22;
 
-    /** Side action buttons (ShopEdit SIDE_BTN_*). */
+    /** Done beside player inventory — only when matcher-entry item UI is shown. */
     public static final int SIDE_BTN_X = 188;
     public static final int SIDE_BTN_Y = PLAYER_INV_Y;
     public static final int SIDE_BTN_W = 72;
     public static final int SIDE_BTN_H = 14;
-    public static final int SIDE_BTN_GAP = 4;
+
+    /** Bottom action bar (New / Done / Save / …) when inventory UI is hidden. */
+    public static final int BOTTOM_BTN_H = 14;
+    public static final int BOTTOM_BTN_GAP = 4;
+    public static final int BOTTOM_PAD = 8;
+    public static final int BOTTOM_BAR_Y = GUI_HEIGHT - BOTTOM_PAD - BOTTOM_BTN_H;
 
     public static final int LIST_X = 8;
     public static final int LIST_Y = 28;
-    public static final int LIST_RIGHT = SIDE_BTN_X + SIDE_BTN_W;
+    /** Full panel width — actions sit on the bottom bar, not a side column. */
+    public static final int LIST_RIGHT = GUI_WIDTH - 8;
     public static final int LIST_WIDTH = LIST_RIGHT - LIST_X;
 
+    /** Parked coordinates so recipe viewers still see active player slots. */
+    private static final int OFFSCREEN = -10000;
+
     private final SimpleContainer ghost = new SimpleContainer(1);
-    private boolean slotsVisible = true;
+    /** True when ghost + player inv should be drawn / clickable in the GUI. */
+    private boolean slotsUiVisible = true;
     private @Nullable Runnable onGhostChanged;
 
     public StageGeneratorMenu(int containerId, Inventory playerInv) {
         super(AsMenus.STAGE_GENERATOR.get(), containerId);
 
-        addSlot(new GhostSlot(this, ghost, 0, GHOST_X, GHOST_Y));
+        addSlot(new GhostSlot(this, ghost, 0, OFFSCREEN, OFFSCREEN));
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new VisibilitySlot(
-                        playerInv,
-                        col + row * 9 + 9,
-                        PLAYER_INV_X + col * 18,
-                        PLAYER_INV_Y + row * 18));
+                addSlot(new Slot(playerInv, col + row * 9 + 9, OFFSCREEN, OFFSCREEN));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new VisibilitySlot(playerInv, col, PLAYER_INV_X + col * 18, PLAYER_INV_Y + 58));
-        }
-    }
-
-    private final class VisibilitySlot extends Slot {
-        private VisibilitySlot(Inventory inv, int index, int x, int y) {
-            super(inv, index, x, y);
-        }
-
-        @Override
-        public boolean isActive() {
-            return slotsVisible;
+            addSlot(new Slot(playerInv, col, OFFSCREEN, OFFSCREEN));
         }
     }
 
@@ -98,16 +95,49 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
     }
 
     public void setSlotsVisible(boolean visible) {
-        this.slotsVisible = visible;
+        this.slotsUiVisible = visible;
     }
 
     public boolean slotsVisible() {
-        return slotsVisible;
+        return slotsUiVisible;
+    }
+
+    /** GUI-local X for drawing/clicking slot {@code index} (ghost=0, then player inv). */
+    public static int visualSlotX(int index) {
+        if (index == GHOST_SLOT) {
+            return GHOST_X;
+        }
+        int inv = index - PLAYER_INV_START;
+        if (inv < 0 || inv >= PLAYER_INV_COUNT) {
+            return OFFSCREEN;
+        }
+        if (inv < 27) {
+            return PLAYER_INV_X + (inv % 9) * 18;
+        }
+        return PLAYER_INV_X + (inv - 27) * 18;
+    }
+
+    /** GUI-local Y for drawing/clicking slot {@code index}. */
+    public static int visualSlotY(int index) {
+        if (index == GHOST_SLOT) {
+            return GHOST_Y;
+        }
+        int inv = index - PLAYER_INV_START;
+        if (inv < 0 || inv >= PLAYER_INV_COUNT) {
+            return OFFSCREEN;
+        }
+        if (inv < 27) {
+            return PLAYER_INV_Y + (inv / 9) * 18;
+        }
+        return PLAYER_INV_Y + 58;
     }
 
     @Override
     public void clicked(int slotIndex, int buttonNum, ContainerInput containerInput, Player player) {
-        if (slotIndex == GHOST_SLOT && slotsVisible) {
+        if (!slotsUiVisible) {
+            return;
+        }
+        if (slotIndex == GHOST_SLOT) {
             ItemStack carried = getCarried();
             if (carried.isEmpty()) {
                 setGhostStack(ItemStack.EMPTY);
@@ -116,15 +146,12 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
             }
             return;
         }
-        if (!slotsVisible && slotIndex >= 0) {
-            return;
-        }
         super.clicked(slotIndex, buttonNum, containerInput, player);
     }
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        if (!slotsVisible) {
+        if (!slotsUiVisible) {
             return ItemStack.EMPTY;
         }
         if (index >= PLAYER_INV_START && index < PLAYER_INV_START + PLAYER_INV_COUNT) {
