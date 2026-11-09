@@ -72,7 +72,7 @@
   "screen.another_stages.stage_generator.save.reload_hint": "Reload datapacks or KubeJS scripts for changes to apply.",
   "screen.another_stages.stage_generator.close_hint_title": "Apply changes",
   "screen.another_stages.stage_generator.close": "Close",
-  "screen.another_stages.stage_generator.close_reload_hint": "Restrictions were written to the workspace files when Ready. Use §e/reload§r for a full datapack reload (picks up new files). Use §e/iska_lib_dev reload§r to refresh stage data already known to the loader. If you prefer KubeJS, reload scripts after editing.",
+  "screen.another_stages.stage_generator.close_reload_hint": "Ready restrictions were written to the workspace files.\n§e/reload§r — full datapack reload (also picks up new files).\n§e/iska_lib_dev reload§r — refresh stage data already known to the loader.\nKubeJS: reload scripts after editing.",
   "screen.another_stages.stage_generator.search_hint": "Search…",
   "screen.another_stages.stage_generator.search.empty": "No matches.",
   "screen.another_stages.stage_generator.ghost_hint": "Ghost slot: click inventory item or drag from JEI/EMI/REI",

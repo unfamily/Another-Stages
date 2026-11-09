@@ -405,7 +405,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     private void buildPrefer() {
         StageGenScrollList list = createList(topPos + 8, contentBottom());
         list.addLabel("screen.another_stages.stage_generator.prefer_kubejs.title");
-        list.addLabel("screen.another_stages.stage_generator.prefer_kubejs.message");
+        list.addWrappedLabel("screen.another_stages.stage_generator.prefer_kubejs.message");
         list.addActionButton(
                 Component.translatable("screen.another_stages.stage_generator.prefer_kubejs.yes"),
                 () -> finishPrefer(true));
@@ -470,7 +470,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     private void buildCloseHint() {
         StageGenScrollList list = createList(topPos + 8, contentBottom());
         list.addLabel("screen.another_stages.stage_generator.close_hint_title");
-        list.addLabel(Component.translatable("screen.another_stages.stage_generator.close_reload_hint"));
+        list.addWrappedLabel("screen.another_stages.stage_generator.close_reload_hint");
         addBottomButton(
                 Component.translatable("screen.another_stages.stage_generator.close"),
                 this::confirmClose);

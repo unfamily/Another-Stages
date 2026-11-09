@@ -11,6 +11,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.anotherstages.client.gui.AsButton;
@@ -130,6 +131,19 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
         addLabel(Component.translatable(key));
     }
 
+    /** Long copy that wraps to the row width (close hint, prefer message, …). */
+    public void addWrappedLabel(Component text) {
+        int width = Math.max(40, getRowWidth());
+        List<FormattedCharSequence> lines = font.split(text, width);
+        int lineH = font.lineHeight + 2;
+        int height = Math.max(ROW_H, lines.size() * lineH + 8);
+        addEntry(new WrappedLabelEntry(text), height);
+    }
+
+    public void addWrappedLabel(String key) {
+        addWrappedLabel(Component.translatable(key));
+    }
+
     public EditBox addTextField(String labelKey, String initial, Consumer<String> onChange) {
         TextEntry entry = new TextEntry(labelKey, initial, onChange);
         addEntry(entry, TALL_ROW_H);
@@ -197,6 +211,35 @@ public final class StageGenScrollList extends ContainerObjectSelectionList<Stage
         @Override
         public List<? extends NarratableEntry> narratables() {
             return List.of(label);
+        }
+    }
+
+    private final class WrappedLabelEntry extends Entry {
+        private final Component text;
+
+        WrappedLabelEntry(Component text) {
+            this.text = text;
+        }
+
+        @Override
+        public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovering, float a) {
+            int x = getContentX();
+            int y = getContentY() + 4;
+            int width = Math.max(40, getRowWidth());
+            for (FormattedCharSequence line : font.split(text, width)) {
+                graphics.text(font, line, x, y, 0xFFE8E8F0, false);
+                y += font.lineHeight + 2;
+            }
+        }
+
+        @Override
+        public List<? extends GuiEventListener> children() {
+            return List.of();
+        }
+
+        @Override
+        public List<? extends NarratableEntry> narratables() {
+            return List.of();
         }
     }
 
