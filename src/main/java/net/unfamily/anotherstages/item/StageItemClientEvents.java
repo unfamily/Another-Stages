@@ -1,21 +1,57 @@
 package net.unfamily.anotherstages.item;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.unfamily.anotherstages.AnotherStages;
 
 import java.util.List;
 
 /**
- * Applies optional custom tooltips, lock hints, and Unfamiliar Item renaming from stage-item rules.
+ * Client presentation and input cancel for stage-item rules.
+ * {@link InputEvent.InteractionKeyMappingTriggered} stops dig/use before
+ * {@code MultiPlayerGameMode} prediction (LeftClickBlock alone is too late for hold dig).
  */
 @EventBusSubscriber(modid = AnotherStages.MOD_ID, value = Dist.CLIENT)
 public final class StageItemClientEvents {
     private StageItemClientEvents() {}
+
+    /**
+     * Cancels attack / use key before client mining or item-use prediction starts.
+     */
+    @SubscribeEvent
+    public static void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
+        if (!StageItemHandler.hasLoadedRestrictions()) {
+            return;
+        }
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        if (event.isAttack()) {
+            ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+            if (StageItemHandler.shouldBlockLeftClick(player, stack)) {
+                event.setCanceled(true);
+                event.setSwingHand(false);
+            }
+            return;
+        }
+        if (event.isUseItem()) {
+            InteractionHand hand = event.getHand();
+            ItemStack stack = player.getItemInHand(hand);
+            if (StageItemHandler.shouldBlockRightClick(player, stack)) {
+                event.setCanceled(true);
+                event.setSwingHand(false);
+            }
+        }
+    }
 
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
