@@ -2,7 +2,7 @@ package net.unfamily.anotherstages.command;
 
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 public final class CallActionCommand {
     private CallActionCommand() {}
 
+    private static final Component JSON_ONLY_TIP =
+            Component.literal("§cJSON ONLY§r / §cSOLO JSON§r — datapack stage_actions");
+
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_PLAYERS = (context, builder) -> {
         var server = context.getSource().getServer();
         if (server == null) {
@@ -41,11 +44,24 @@ public final class CallActionCommand {
         return SharedSuggestionProvider.suggest(names, builder);
     };
 
-    private static final SuggestionProvider<CommandSourceStack> SUGGEST_ACTIONS = (context, builder) ->
-            SharedSuggestionProvider.suggest(StageActionHooks.getListener().listActionIds(), builder);
+    private static final SuggestionProvider<CommandSourceStack> SUGGEST_CALL_ACTION = (context, builder) -> {
+        builder.suggest("call_action", JSON_ONLY_TIP);
+        return builder.buildFuture();
+    };
 
-    public static LiteralArgumentBuilder<CommandSourceStack> subtree() {
-        return Commands.literal("call_action")
+    private static final SuggestionProvider<CommandSourceStack> SUGGEST_ACTIONS = (context, builder) ->
+            SharedSuggestionProvider.suggest(
+                    StageActionHooks.getListener().listActionIds(),
+                    builder,
+                    id -> id,
+                    id -> JSON_ONLY_TIP);
+
+    /**
+     * Word-argument (not literal) so Tab can show the JSON-only tooltip in the command GUI.
+     */
+    public static ArgumentBuilder<CommandSourceStack, ?> subtree() {
+        return Commands.argument("call_action", StringArgumentType.word())
+                .suggests(SUGGEST_CALL_ACTION)
                 .then(Commands.argument("target", EntityArgument.entities()).suggests(SUGGEST_PLAYERS)
                         .then(Commands.argument("action_id", StringArgumentType.word()).suggests(SUGGEST_ACTIONS)
                                 .executes(CallActionCommand::run)
@@ -60,6 +76,12 @@ public final class CallActionCommand {
 
     private static int run(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
+        String verb = StringArgumentType.getString(context, "call_action");
+        if (!"call_action".equals(verb)) {
+            source.sendFailure(Component.literal(
+                    "§cUsage: /another_stages call_action <target> <action_id> [force] [silent] [hide] — §cJSON ONLY§r"));
+            return 0;
+        }
         String actionId = StringArgumentType.getString(context, "action_id");
         boolean force = optionalBool(context, "force", false);
         boolean silent = optionalBool(context, "silent", false);
