@@ -16,10 +16,9 @@ import java.util.UUID;
  * Convenience gates for vanilla/mixin call sites.
  * <p>
  * <b>Machines / process blocks</b> (furnace, campfire, crafter, mod BEs): often have
- * <b>no owner</b>. Missing owner must never skip a stage lock — evaluate AS rules
+ * <b>no owner</b>. Missing owner must never skip a stage lock — Library
+ * {@link RecipeBlockBridge} delegates to providers when {@code ownerUuid == null}
  * (world stages apply; player-scoped conditions resolve as missing when no online player).
- * With an owner UUID, use Library {@link RecipeBlockBridge} (which also consults providers
- * when owner is null).
  */
 public final class RecipeStageGate {
     private RecipeStageGate() {}
@@ -40,7 +39,7 @@ public final class RecipeStageGate {
 
     /**
      * Process/machine gate: prevent the recipe from starting when stage-locked.
-     * No {@link MachineOwners} entry is normal — still block when stage rules say so.
+     * No {@link MachineOwners} entry is normal — bridge still consults providers.
      */
     public static boolean isBlockedForMachine(
             @Nullable Identifier recipeId, @Nullable BlockEntity be, @Nullable Level level) {
@@ -48,10 +47,6 @@ public final class RecipeStageGate {
             return false;
         }
         UUID owner = MachineOwners.get(be);
-        if (owner == null) {
-            // Do not use RecipeBlockBridge here: it fail-closes all recipes when owner is null.
-            return StageRecipeHandler.isBlocked(recipeId, null, level, null);
-        }
         return RecipeBlockBridge.isRecipeBlocked(recipeId, owner, level);
     }
 

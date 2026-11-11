@@ -187,7 +187,7 @@ dependencies {
                     '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.0.0-neoforge-26.1.2.jar',
             ]),
             pickFirstExisting([
-                    '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.1.0.jar',
+                    '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.1.1.jar',
                     // '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.0.0-neoforge-26.1.2.jar',
             ]),
             pickFirstExisting([

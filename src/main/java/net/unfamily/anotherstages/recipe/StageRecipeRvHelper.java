@@ -162,8 +162,17 @@ public final class StageRecipeRvHelper {
         }
         if (category != null) {
             try {
-                return ((IRecipeCategory) category).getIdentifier(recipe);
-            } catch (RuntimeException ignored) {
+                // JEI 26+: getIdentifier; older / some mods still override getRegistryName.
+                Identifier id = ((IRecipeCategory) category).getIdentifier(recipe);
+                if (id != null) {
+                    return id;
+                }
+            } catch (RuntimeException | AbstractMethodError | NoSuchMethodError ignored) {
+                // fall through to getRegistryName
+            }
+            try {
+                return ((IRecipeCategory) category).getRegistryName(recipe);
+            } catch (RuntimeException | AbstractMethodError | NoSuchMethodError ignored) {
                 return null;
             }
         }
