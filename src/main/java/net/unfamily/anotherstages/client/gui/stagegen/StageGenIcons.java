@@ -1,7 +1,7 @@
 package net.unfamily.anotherstages.client.gui.stagegen;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -22,7 +22,7 @@ public final class StageGenIcons {
         if (m.startsWith("#") || m.startsWith("@")) {
             return ItemStack.EMPTY;
         }
-        Identifier id = Identifier.tryParse(m.contains(":") ? m : "minecraft:" + m);
+        ResourceLocation id = ResourceLocation.tryParse(m.contains(":") ? m : "minecraft:" + m);
         if (id == null) {
             return ItemStack.EMPTY;
         }

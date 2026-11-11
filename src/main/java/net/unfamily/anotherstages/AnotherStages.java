@@ -37,7 +37,7 @@ public class AnotherStages {
         net.unfamily.anotherstages.kubejs.KubeStageChangedBridge.install();
         net.unfamily.anotherstages.datapack.AsUtilsReloadBridge.install();
         modEventBus.addListener(net.unfamily.anotherstages.datapack.AsUtilsReloadBridge::onCommonSetup);
-        if (FMLEnvironment.getDist() == Dist.CLIENT) {
+        if (FMLEnvironment.dist == Dist.CLIENT) {
             net.unfamily.anotherstages.client.StageItemClientSetup.register(modEventBus);
             net.unfamily.anotherstages.client.AsClientSetup.register(modEventBus);
         }

@@ -3,7 +3,7 @@ package net.unfamily.anotherstages.mixin;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.anotherstages.config.AsConfig;
@@ -21,9 +21,13 @@ import java.util.List;
  */
 @Mixin(AbstractContainerMenu.class)
 public abstract class AbstractContainerMenuClickedMixin {
-    @Inject(method = "clicked", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(
+            method = "clicked(IILnet/minecraft/world/inventory/ClickType;Lnet/minecraft/world/entity/player/Player;)V",
+            at = @At("HEAD"),
+            cancellable = true,
+            remap = false)
     private void anotherStages$gateGuiSlots(
-            int slotIndex, int buttonNum, ContainerInput containerInput, Player player, CallbackInfo ci) {
+            int slotIndex, int buttonNum, ClickType clickType, Player player, CallbackInfo ci) {
         if (!AsConfig.mixinGuiSlots()) {
             return;
         }
@@ -49,7 +53,6 @@ public abstract class AbstractContainerMenuClickedMixin {
 
         ItemStack carried = self.getCarried();
         if (!carried.isEmpty() && StageGuiHandler.isItemBlockedInMenu(active, carried.getItem())) {
-            // Placing a blocked item into the menu
             if (slotIndex >= 0 && slotIndex < self.slots.size()) {
                 Slot slot = self.slots.get(slotIndex);
                 if (slot.container != player.getInventory()) {

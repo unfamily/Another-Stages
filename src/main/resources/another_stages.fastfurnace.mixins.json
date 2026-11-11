@@ -1,7 +1,7 @@
 {
   "required": false,
   "package": "net.unfamily.anotherstages.mixin.compat.fastfurnace",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "refmap": "another_stages.refmap.json",
   "plugin": "net.unfamily.anotherstages.mixin.compat.AsCompatMixinPlugin",
   "mixins": [

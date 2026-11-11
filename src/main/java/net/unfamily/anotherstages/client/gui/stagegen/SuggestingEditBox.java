@@ -2,53 +2,33 @@ package net.unfamily.anotherstages.client.gui.stagegen;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * EditBox with Tab / Shift+Tab prefix completion from a suggestion pool.
+ * Edit box with a small suggestion strip under the field (Tab cycles completions).
  */
 public final class SuggestingEditBox extends EditBox {
-    private final Supplier<List<String>> poolSupplier;
-    private String typedPrefix = "";
-    private final List<String> visibleSuggestions = new ArrayList<>();
     private static final int MAX_VISIBLE = 6;
 
-    public SuggestingEditBox(
-            Font font,
-            int x,
-            int y,
-            int width,
-            int height,
-            Component message,
-            Supplier<List<String>> poolSupplier
-    ) {
-        super(font, x, y, width, height, message);
+    private final Supplier<List<String>> poolSupplier;
+    private final List<String> visibleSuggestions = new ArrayList<>();
+    private String typedPrefix = "";
+
+    public SuggestingEditBox(Font font, int width, int height, Component message, Supplier<List<String>> poolSupplier) {
+        super(font, 0, 0, width, height, message);
         this.poolSupplier = poolSupplier;
-        super.setResponder(this::onTyped);
-    }
-
-    @Override
-    public void setResponder(Consumer<String> responder) {
-        super.setResponder(value -> {
-            onTyped(value);
-            if (responder != null) {
-                responder.accept(value);
-            }
+        setResponder(s -> {
+            typedPrefix = s == null ? "" : s;
+            refreshSuggestions();
         });
-    }
-
-    private void onTyped(String value) {
-        typedPrefix = value == null ? "" : value;
-        refreshSuggestions();
     }
 
     public void refreshSuggestions() {
@@ -64,9 +44,9 @@ public final class SuggestingEditBox extends EditBox {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
-        if (event.key() == InputConstants.KEY_TAB && isFocused()) {
-            boolean reverse = event.hasShiftDown();
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_TAB && isFocused()) {
+            boolean reverse = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
             String next = StageGenSuggestions.nextCompletion(
                     poolSupplier.get(),
                     typedPrefix,
@@ -80,13 +60,13 @@ public final class SuggestingEditBox extends EditBox {
             }
             return true;
         }
-        boolean handled = super.keyPressed(event);
+        boolean handled = super.keyPressed(keyCode, scanCode, modifiers);
         refreshSuggestions();
         return handled;
     }
 
-    /** Draw suggestion strip under the box (call from screen extract). */
-    public void extractSuggestions(GuiGraphicsExtractor graphics, Font font) {
+    /** Draw suggestion strip under the box (call from screen render). */
+    public void renderSuggestions(GuiGraphics graphics, Font font) {
         if (!isFocused() || visibleSuggestions.isEmpty()) {
             return;
         }
@@ -100,11 +80,13 @@ public final class SuggestingEditBox extends EditBox {
         for (int i = 0; i < visibleSuggestions.size(); i++) {
             String s = visibleSuggestions.get(i);
             boolean match = s.equalsIgnoreCase(getValue());
-            graphics.text(font, s, x + 2, y + 2 + i * rowH, match ? 0xFF66CC66 : 0xFFE8E8F0, false);
+            graphics.drawString(font, s, x + 2, y + 2 + i * rowH, match ? 0xFF66CC66 : 0xFFE8E8F0, false);
         }
     }
 
-    public static boolean hasShift(@Nullable KeyEvent event) {
-        return event != null && event.hasShiftDown();
+    public static boolean hasShiftDown() {
+        long window = net.minecraft.client.Minecraft.getInstance().getWindow().getWindow();
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
     }
 }

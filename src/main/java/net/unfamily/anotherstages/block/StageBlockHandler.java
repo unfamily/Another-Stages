@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.entity.player.Player;
@@ -41,19 +41,19 @@ public final class StageBlockHandler {
 
     private static final List<StageBlockRule> DATAPACK_RULES = new ArrayList<>();
     private static final Map<String, StageBlockRule> SCRIPT_RULES = new HashMap<>();
-    private static final Map<Identifier, List<StageBlockRule>> BY_BLOCK = new HashMap<>();
+    private static final Map<ResourceLocation, List<StageBlockRule>> BY_BLOCK = new HashMap<>();
     /** Fast path: any loaded rule has {@code stop_tick: true}. */
     private static boolean anyStopTickRules = false;
 
     private StageBlockHandler() {}
 
-    private static Map<Identifier, JsonElement> collectBootstrap() {
+    private static Map<ResourceLocation, JsonElement> collectBootstrap() {
         return collectMerged(null);
     }
 
     /** ResourceManager first, then jar + live filesystem roots (filesystem wins on same id). */
-    private static Map<Identifier, JsonElement> collectMerged(@Nullable ResourceManager rm) {
-        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+    private static Map<ResourceLocation, JsonElement> collectMerged(@Nullable ResourceManager rm) {
+        Map<ResourceLocation, JsonElement> merged = new java.util.LinkedHashMap<>();
         if (rm != null) {
             merged.putAll(LoadJson.collectMergedJsonForTypes(rm, ACCEPTED));
         }
@@ -68,7 +68,7 @@ public final class StageBlockHandler {
     public static void loadAll(@Nullable ResourceManager rm) {
         DATAPACK_RULES.clear();
         try {
-            Map<Identifier, JsonElement> merged = collectMerged(rm);
+            Map<ResourceLocation, JsonElement> merged = collectMerged(rm);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -140,7 +140,7 @@ public final class StageBlockHandler {
                 if (id.startsWith("#") || id.startsWith("@") || StageIdMatchers.hasRegexPrefix(id)) {
                     continue;
                 }
-                Identifier blockId = Identifier.tryParse(id);
+                ResourceLocation blockId = ResourceLocation.tryParse(id);
                 if (blockId != null) {
                     BY_BLOCK.computeIfAbsent(blockId, k -> new ArrayList<>()).add(rule);
                 }
@@ -259,7 +259,7 @@ public final class StageBlockHandler {
         if (ruleCount() == 0 || state == null) {
             return null;
         }
-        Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         List<StageBlockRule> candidates = new ArrayList<>(BY_BLOCK.getOrDefault(id, List.of()));
         for (StageBlockRule rule : allRules()) {
             if (candidates.contains(rule)) {
@@ -329,12 +329,12 @@ public final class StageBlockHandler {
     }
 
     public static BlockState mimicState(StageBlockRule rule) {
-        Identifier id = Identifier.tryParse(rule.mimic);
+        ResourceLocation id = ResourceLocation.tryParse(rule.mimic);
         if (id == null) {
-            id = Identifier.parse("minecraft:stone");
+            id = ResourceLocation.parse("minecraft:stone");
         }
         Block block = BuiltInRegistries.BLOCK.getOptional(id)
-                .orElseGet(() -> BuiltInRegistries.BLOCK.getOptional(Identifier.parse("minecraft:stone")).orElseThrow());
+                .orElseGet(() -> BuiltInRegistries.BLOCK.getOptional(ResourceLocation.parse("minecraft:stone")).orElseThrow());
         return block.defaultBlockState();
     }
 

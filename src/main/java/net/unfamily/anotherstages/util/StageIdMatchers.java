@@ -1,7 +1,7 @@
 package net.unfamily.anotherstages.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
@@ -90,7 +90,7 @@ public final class StageIdMatchers {
         if (item == null || list == null || list.isEmpty()) {
             return false;
         }
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
         String itemIdStr = itemId.toString();
         String modId = itemId.getNamespace();
         for (String entry : list) {
@@ -102,7 +102,7 @@ public final class StageIdMatchers {
                     return true;
                 }
             } else if (entry.startsWith("#")) {
-                Identifier tagId = Identifier.tryParse(entry.substring(1));
+                ResourceLocation tagId = ResourceLocation.tryParse(entry.substring(1));
                 if (tagId != null && item.builtInRegistryHolder().is(ItemTags.create(tagId))) {
                     return true;
                 }
@@ -122,7 +122,7 @@ public final class StageIdMatchers {
         if (block == null || list == null || list.isEmpty()) {
             return false;
         }
-        Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         String idStr = id.toString();
         String mod = id.getNamespace();
         for (String entry : list) {
@@ -134,7 +134,7 @@ public final class StageIdMatchers {
                     return true;
                 }
             } else if (entry.startsWith("#")) {
-                Identifier tag = Identifier.tryParse(entry.substring(1));
+                ResourceLocation tag = ResourceLocation.tryParse(entry.substring(1));
                 if (tag != null && block.builtInRegistryHolder().is(BlockTags.create(tag))) {
                     return true;
                 }

@@ -3,9 +3,7 @@ package net.unfamily.anotherstages.recipe;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,8 +40,8 @@ public final class StageRecipeHandler {
 
     private static final List<StageRecipeRule> DATAPACK_RULES = new ArrayList<>();
     private static final Map<String, StageRecipeRule> SCRIPT_RULES = new HashMap<>();
-    private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_ID = new HashMap<>();
-    private static final Map<Identifier, List<StageRecipeRule>> BY_RECIPE_TYPE = new HashMap<>();
+    private static final Map<ResourceLocation, List<StageRecipeRule>> BY_RECIPE_ID = new HashMap<>();
+    private static final Map<ResourceLocation, List<StageRecipeRule>> BY_RECIPE_TYPE = new HashMap<>();
     private static final List<StageRecipeRule> IO_RULES = new ArrayList<>();
     /** Rules with {@code regex:} in recipes/recipe_types (cannot index by exact id). */
     private static final List<StageRecipeRule> PATTERN_RULES = new ArrayList<>();
@@ -52,16 +50,16 @@ public final class StageRecipeHandler {
 
     private StageRecipeHandler() {}
 
-    private static Map<Identifier, JsonElement> collectBootstrap() {
-        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+    private static Map<ResourceLocation, JsonElement> collectBootstrap() {
+        Map<ResourceLocation, JsonElement> merged = new java.util.LinkedHashMap<>();
         merged.putAll(LoadJson.collectFromModJar("another_stages", "another_stages", "another_stages_recipes"));
         mergeFilesystem(merged);
         return merged;
     }
 
     /** ResourceManager first, then jar + live filesystem roots (filesystem wins on same id). */
-    private static Map<Identifier, JsonElement> collectMerged(@Nullable ResourceManager resourceManagerOrNull) {
-        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+    private static Map<ResourceLocation, JsonElement> collectMerged(@Nullable ResourceManager resourceManagerOrNull) {
+        Map<ResourceLocation, JsonElement> merged = new java.util.LinkedHashMap<>();
         if (resourceManagerOrNull != null) {
             merged.putAll(LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES));
         }
@@ -70,7 +68,7 @@ public final class StageRecipeHandler {
         return merged;
     }
 
-    private static void mergeFilesystem(Map<Identifier, JsonElement> merged) {
+    private static void mergeFilesystem(Map<ResourceLocation, JsonElement> merged) {
         int external = LoadFilesystemBootstrap.mergeIntoForTypes(merged, ACCEPTED_TYPES);
         if (external > 0) {
             LOGGER.info("Recipe stage: merged {} file(s) from configured datapack paths", external);
@@ -80,7 +78,7 @@ public final class StageRecipeHandler {
     public static void loadAll(@Nullable ResourceManager resourceManagerOrNull) {
         DATAPACK_RULES.clear();
         try {
-            Map<Identifier, JsonElement> merged = collectMerged(resourceManagerOrNull);
+            Map<ResourceLocation, JsonElement> merged = collectMerged(resourceManagerOrNull);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -163,7 +161,7 @@ public final class StageRecipeHandler {
             if (StageIdMatchers.hasRegexPrefix(id)) {
                 continue;
             }
-            Identifier recipeId = Identifier.tryParse(id);
+            ResourceLocation recipeId = ResourceLocation.tryParse(id);
             if (recipeId != null) {
                 BY_RECIPE_ID.computeIfAbsent(recipeId, k -> new ArrayList<>()).add(rule);
                 indexed = true;
@@ -173,7 +171,7 @@ public final class StageRecipeHandler {
             if (StageIdMatchers.hasRegexPrefix(type)) {
                 continue;
             }
-            Identifier typeId = Identifier.tryParse(type);
+            ResourceLocation typeId = ResourceLocation.tryParse(type);
             if (typeId != null) {
                 BY_RECIPE_TYPE.computeIfAbsent(typeId, k -> new ArrayList<>()).add(rule);
                 indexed = true;
@@ -273,7 +271,7 @@ public final class StageRecipeHandler {
      * Active rules for a recipe on the client (uses {@link net.unfamily.anotherstages.client.ClientStageCache}).
      */
     public static List<StageRecipeRule> findActiveRulesClient(
-            Identifier recipeId,
+            ResourceLocation recipeId,
             @Nullable RecipeHolder<?> holder) {
         return findActiveRulesClient(recipeId, holder, null);
     }
@@ -282,7 +280,7 @@ public final class StageRecipeHandler {
      * @param recipeView optional JEI recipe object (e.g. Utils wrapper) for I/O / type when holder is null
      */
     public static List<StageRecipeRule> findActiveRulesClient(
-            Identifier recipeId,
+            ResourceLocation recipeId,
             @Nullable RecipeHolder<?> holder,
             @Nullable Object recipeView) {
         List<StageRecipeRule> active = new ArrayList<>();
@@ -393,7 +391,7 @@ public final class StageRecipeHandler {
     }
 
     public static boolean isBlocked(
-            Identifier recipeId,
+            ResourceLocation recipeId,
             @Nullable UUID ownerUuid,
             @Nullable Level level,
             @Nullable ServerPlayer onlinePlayer) {
@@ -449,7 +447,7 @@ public final class StageRecipeHandler {
             return false;
         }
         if (!rule.recipeTypes.isEmpty()) {
-            Identifier typeId = JeiWrapperIoProbe.inferredRecipeType(recipeView);
+            ResourceLocation typeId = JeiWrapperIoProbe.inferredRecipeType(recipeView);
             if (typeId == null || !StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
                 return false;
             }
@@ -464,21 +462,21 @@ public final class StageRecipeHandler {
     }
 
     private static List<StageRecipeRule> collectCandidates(
-            Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+            ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
         return collectCandidates(recipeId, holder, null);
     }
 
     private static List<StageRecipeRule> collectCandidates(
-            Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
+            ResourceLocation recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         List<StageRecipeRule> out = new ArrayList<>();
         out.addAll(BY_RECIPE_ID.getOrDefault(recipeId, Collections.emptyList()));
         if (holder != null) {
-            Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
+            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
             if (typeId != null) {
                 out.addAll(BY_RECIPE_TYPE.getOrDefault(typeId, Collections.emptyList()));
             }
         } else {
-            Identifier wrapperType = JeiWrapperIoProbe.inferredRecipeType(recipeView);
+            ResourceLocation wrapperType = JeiWrapperIoProbe.inferredRecipeType(recipeView);
             if (wrapperType != null) {
                 out.addAll(BY_RECIPE_TYPE.getOrDefault(wrapperType, Collections.emptyList()));
             }
@@ -507,7 +505,7 @@ public final class StageRecipeHandler {
             return false;
         }
         if (!rule.recipeTypes.isEmpty()) {
-            Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
+            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
             if (typeId == null || !StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
                 return false;
             }
@@ -583,7 +581,7 @@ public final class StageRecipeHandler {
     }
 
     @Nullable
-    private static RecipeHolder<?> resolveHolder(Identifier recipeId, @Nullable Level level) {
+    private static RecipeHolder<?> resolveHolder(ResourceLocation recipeId, @Nullable Level level) {
         if (level == null || level.isClientSide()) {
             return null;
         }
@@ -592,7 +590,6 @@ public final class StageRecipeHandler {
             return null;
         }
         RecipeManager manager = server.getRecipeManager();
-        ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, recipeId);
-        return manager.byKey(key).orElse(null);
+        return manager.byKey(recipeId).orElse(null);
     }
 }

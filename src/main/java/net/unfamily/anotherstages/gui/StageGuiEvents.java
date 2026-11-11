@@ -41,7 +41,7 @@ public final class StageGuiEvents {
                 AnotherStages.LOGGER.info(
                         "Closed menu {} for {} (stage_gui block_open)",
                         menu.getClass().getName(),
-                        player.getGameProfile().name());
+                        player.getGameProfile().getName());
             }
             return;
         }

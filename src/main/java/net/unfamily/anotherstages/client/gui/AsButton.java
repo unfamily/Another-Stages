@@ -2,12 +2,10 @@ package net.unfamily.anotherstages.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +45,6 @@ public final class AsButton extends AbstractWidget {
         return new AsButton(width, HEIGHT, message, onPress, null, false);
     }
 
-    /** Compact button (ShopEdit-style side actions). */
     public static AsButton text(int width, int height, Component message, Runnable onPress) {
         return new AsButton(width, height, message, onPress, null, false);
     }
@@ -68,14 +65,10 @@ public final class AsButton extends AbstractWidget {
         return button;
     }
 
-    /**
-     * Multi-mode selector: left click cycles forward (+1), right click cycles backward (-1).
-     */
     public static AsButton cycle(int width, int height, Component message, IntConsumer delta) {
         return new AsButton(width, height, message, null, delta, false);
     }
 
-    /** Compact square control showing a short glyph. */
     public static AsButton icon(Component glyph, Component tooltip, Runnable onPress) {
         AsButton button = new AsButton(ICON_SIZE, ICON_SIZE, glyph, onPress, null, true);
         button.setTooltip(Tooltip.create(tooltip));
@@ -94,16 +87,7 @@ public final class AsButton extends AbstractWidget {
     }
 
     @Override
-    protected boolean isValidClickButton(MouseButtonInfo buttonInfo) {
-        if (onCycle != null) {
-            int b = buttonInfo.button();
-            return b == 0 || b == 1;
-        }
-        return super.isValidClickButton(buttonInfo);
-    }
-
-    @Override
-    public void onClick(MouseButtonEvent event, boolean doubleClick) {
+    public void onClick(double mouseX, double mouseY) {
         if (activeWhen != null) {
             refreshActive();
         }
@@ -111,17 +95,11 @@ public final class AsButton extends AbstractWidget {
             return;
         }
         if (onCycle != null) {
-            int button = event.button();
-            if (button == 0) {
-                AsUi.playClick();
-                onCycle.accept(1);
-            } else if (button == 1) {
-                AsUi.playClick();
-                onCycle.accept(-1);
-            }
+            AsUi.playClick();
+            onCycle.accept(1);
             return;
         }
-        if (event.button() != 0 || onPress == null) {
+        if (onPress == null) {
             return;
         }
         AsUi.playClick();
@@ -129,11 +107,39 @@ public final class AsButton extends AbstractWidget {
     }
 
     @Override
-    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (activeWhen != null) {
             refreshActive();
         }
-        handleCursor(graphics);
+        if (!this.active || !this.isMouseOver(mouseX, mouseY)) {
+            return false;
+        }
+        if (onCycle != null) {
+            if (button == 0) {
+                AsUi.playClick();
+                onCycle.accept(1);
+                return true;
+            }
+            if (button == 1) {
+                AsUi.playClick();
+                onCycle.accept(-1);
+                return true;
+            }
+            return false;
+        }
+        if (button != 0 || onPress == null) {
+            return false;
+        }
+        AsUi.playClick();
+        onPress.run();
+        return true;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (activeWhen != null) {
+            refreshActive();
+        }
         int bg = !this.active ? BG_DISABLED : (this.isHoveredOrFocused() ? BG_HOVER : BG);
         int border = !this.active ? 0xFF3A3A44 : (this.isHoveredOrFocused() ? BORDER_HOVER : BORDER);
         int x0 = getX();
@@ -155,7 +161,7 @@ public final class AsButton extends AbstractWidget {
         if (iconStyle) {
             ty = y0 + (getHeight() - 9) / 2;
         }
-        graphics.text(font, message.getString(), tx, ty, color);
+        graphics.drawString(font, message, tx, ty, color);
     }
 
     @Override

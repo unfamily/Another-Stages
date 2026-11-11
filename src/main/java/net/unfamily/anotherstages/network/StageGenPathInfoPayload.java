@@ -4,7 +4,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.unfamily.anotherstages.AnotherStages;
 
 /**
@@ -12,7 +12,7 @@ import net.unfamily.anotherstages.AnotherStages;
  */
 public record StageGenPathInfoPayload(String firstDatapackPath) implements CustomPacketPayload {
     public static final Type<StageGenPathInfoPayload> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_gen_path_info"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_gen_path_info"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, StageGenPathInfoPayload> STREAM_CODEC =
             StreamCodec.composite(

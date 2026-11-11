@@ -5,7 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
@@ -31,23 +31,23 @@ public final class StageItemRvHelper {
     }
 
     /** Overlay badge: 24×24 lock under {@code textures/stage_locking/}. */
-    public static final Identifier LOCK_OVERLAY =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked.png");
+    public static final ResourceLocation LOCK_OVERLAY =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked.png");
     public static final int LOCK_OVERLAY_SIZE = 24;
-    public static final Identifier HARDCORE_TEXTURE =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked_hardcore.png");
+    public static final ResourceLocation HARDCORE_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_locked_hardcore.png");
     /** Overlay badge: 32×32 so the fish art stays readable vs the 24×24 lock. */
-    public static final Identifier FISH_OVERLAY =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish.png");
+    public static final ResourceLocation FISH_OVERLAY =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish.png");
     public static final int FISH_OVERLAY_SIZE = 32;
-    public static final Identifier FISH_HARDCORE =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish_hardcore.png");
+    public static final ResourceLocation FISH_HARDCORE =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/stage_fish_hardcore.png");
 
     /** Client item-model ids ({@code assets/.../items/*.json}) used to replace the real item when hardcore. */
-    public static final Identifier HARDCORE_ITEM_MODEL =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_locked_hardcore");
-    public static final Identifier FISH_HARDCORE_ITEM_MODEL =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_fish_hardcore");
+    public static final ResourceLocation HARDCORE_ITEM_MODEL =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_locked_hardcore");
+    public static final ResourceLocation FISH_HARDCORE_ITEM_MODEL =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_fish_hardcore");
 
     private static final int UNFAMILIAR_RED = 0xFF5555;
     private static final String LOCK_CHAR = "\uD83D\uDD12"; // 🔒
@@ -91,7 +91,7 @@ public final class StageItemRvHelper {
     }
 
     /** Texture for inventory/JEI decorator based on mode + April Fools. */
-    public static Identifier textureFor(Mode mode) {
+    public static ResourceLocation textureFor(Mode mode) {
         boolean april = StageAprilFools.isAprilFools();
         return switch (mode) {
             case HARDCORE -> april ? FISH_HARDCORE : HARDCORE_TEXTURE;
@@ -106,7 +106,7 @@ public final class StageItemRvHelper {
     }
 
     /** Flat item model that replaces the real item everywhere while hardcore is active. */
-    public static Identifier hardcoreItemModelId() {
+    public static ResourceLocation hardcoreItemModelId() {
         return StageAprilFools.isAprilFools() ? FISH_HARDCORE_ITEM_MODEL : HARDCORE_ITEM_MODEL;
     }
 

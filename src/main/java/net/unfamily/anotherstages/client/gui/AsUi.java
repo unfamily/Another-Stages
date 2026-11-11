@@ -1,7 +1,6 @@
 package net.unfamily.anotherstages.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
@@ -12,10 +11,7 @@ public final class AsUi {
     private AsUi() {}
 
     public static void playClick() {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft != null) {
-            AbstractWidget.playButtonClickSound(minecraft.getSoundManager());
-        }
+        playClick(1.0F);
     }
 
     public static void playClick(float pitch) {

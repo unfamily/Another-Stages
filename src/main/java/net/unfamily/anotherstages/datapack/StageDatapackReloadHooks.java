@@ -1,12 +1,11 @@
 package net.unfamily.anotherstages.datapack;
 
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.block.StageBlockBootstrap;
@@ -28,9 +27,8 @@ public final class StageDatapackReloadHooks {
     private StageDatapackReloadHooks() {}
 
     @SubscribeEvent
-    public static void onAddServerReloadListeners(AddServerReloadListenersEvent event) {
-        Identifier id = Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_datapack");
-        event.addListener(id, new SimplePreparableReloadListener<Object>() {
+    public static void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener(new SimplePreparableReloadListener<Object>() {
             @Override
             protected Object prepare(ResourceManager resourceManager, ProfilerFiller profiler) {
                 return null;

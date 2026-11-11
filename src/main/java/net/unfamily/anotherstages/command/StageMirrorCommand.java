@@ -13,15 +13,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.unfamily.anotherstages.AnotherStages;
-
-import java.net.URI;
 
 /**
  * {@code /another_stages}: owns {@code call_action} and {@code wiki}; other stage CRUD subcommands mirror Library.
@@ -40,8 +36,7 @@ public final class StageMirrorCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("another_stages")
-                .requires(src -> src.permissions().hasPermission(
-                        new Permission.HasCommandLevel(PermissionLevel.byId(2))));
+                .requires(src -> src.hasPermission(2));
 
         // Mirror of Library call_action (JSON-only Stage Actions).
         builder.then(CallActionCommand.subtree());
@@ -90,8 +85,9 @@ public final class StageMirrorCommand {
                 .withStyle(Style.EMPTY
                         .withColor(ChatFormatting.AQUA)
                         .withUnderlined(true)
-                        .withClickEvent(new ClickEvent.OpenUrl(URI.create(WIKI_URL)))
-                        .withHoverEvent(new HoverEvent.ShowText(
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, WIKI_URL))
+                        .withHoverEvent(new HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT,
                                 Component.translatable("commands.another_stages.wiki.hover"))));
         context.getSource().sendSuccess(
                 () -> Component.translatable("commands.another_stages.wiki", link),

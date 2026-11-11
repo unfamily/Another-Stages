@@ -2,11 +2,8 @@ package net.unfamily.anotherstages.recipe;
 
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.StageAprilFools;
@@ -33,10 +30,10 @@ public final class StageRecipeRvHelper {
     }
 
     /** Dedicated 16×16 JEI badges under {@code textures/stage_locking/}. */
-    public static final Identifier RECIPE_LOCKED =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked.png");
-    public static final Identifier RECIPE_LOCKED_FISH =
-            Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked_fish.png");
+    public static final ResourceLocation RECIPE_LOCKED =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked.png");
+    public static final ResourceLocation RECIPE_LOCKED_FISH =
+            ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "textures/stage_locking/recipe_locked_fish.png");
     public static final int RECIPE_LOCKED_SIZE = 16;
     public static final int RECIPE_LOCKED_FISH_SIZE = 16;
 
@@ -45,12 +42,12 @@ public final class StageRecipeRvHelper {
 
     private StageRecipeRvHelper() {}
 
-    public static Mode modeFor(@Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+    public static Mode modeFor(@Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
         return modeFor(recipeId, holder, null);
     }
 
     public static Mode modeFor(
-            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
+            @Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         if (recipeId == null || !StageRecipeHandler.hasLoadedRules()) {
             return Mode.NONE;
         }
@@ -73,7 +70,7 @@ public final class StageRecipeRvHelper {
         };
     }
 
-    public static Identifier lockTexture() {
+    public static ResourceLocation lockTexture() {
         return StageAprilFools.isAprilFools() ? RECIPE_LOCKED_FISH : RECIPE_LOCKED;
     }
 
@@ -83,12 +80,12 @@ public final class StageRecipeRvHelper {
     }
 
     public static List<StageRecipeRule> activeOverlayRules(
-            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+            @Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
         return activeOverlayRules(recipeId, holder, null);
     }
 
     public static List<StageRecipeRule> activeOverlayRules(
-            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
+            @Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         List<StageRecipeRule> out = new ArrayList<>();
         if (recipeId == null) {
             return out;
@@ -102,12 +99,12 @@ public final class StageRecipeRvHelper {
     }
 
     /** Corner from the first active overlay rule (default top_right). */
-    public static Corner overlayCorner(@Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+    public static Corner overlayCorner(@Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
         return overlayCorner(recipeId, holder, null);
     }
 
     public static Corner overlayCorner(
-            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
+            @Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         for (StageRecipeRule rule : activeOverlayRules(recipeId, holder, recipeView)) {
             return toCorner(StageRecipeHandler.overlayCorner(rule));
         }
@@ -169,26 +166,17 @@ public final class StageRecipeRvHelper {
     }
 
     @Nullable
-    public static Identifier idOf(Object recipe) {
+    public static ResourceLocation idOf(Object recipe) {
         return idOf(recipe, null);
     }
 
     @Nullable
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static Identifier idOf(Object recipe, @Nullable IRecipeCategory<?> category) {
+    public static ResourceLocation idOf(Object recipe, @Nullable IRecipeCategory<?> category) {
         if (recipe instanceof RecipeHolder<?> holder) {
-            return holder.id().identifier();
+            return holder.id();
         }
         if (category != null) {
-            try {
-                // JEI 26+: getIdentifier; older / some mods still override getRegistryName.
-                Identifier id = ((IRecipeCategory) category).getIdentifier(recipe);
-                if (id != null) {
-                    return id;
-                }
-            } catch (RuntimeException | AbstractMethodError | NoSuchMethodError ignored) {
-                // fall through to getRegistryName
-            }
             try {
                 return ((IRecipeCategory) category).getRegistryName(recipe);
             } catch (RuntimeException | AbstractMethodError | NoSuchMethodError ignored) {
@@ -204,7 +192,7 @@ public final class StageRecipeRvHelper {
     }
 
     @Nullable
-    public static RecipeHolder<?> asHolder(Object recipe, @Nullable Identifier recipeId) {
+    public static RecipeHolder<?> asHolder(Object recipe, @Nullable ResourceLocation recipeId) {
         if (recipe instanceof RecipeHolder<?> holder) {
             return holder;
         }
@@ -215,8 +203,7 @@ public final class StageRecipeRvHelper {
         try {
             Minecraft mc = Minecraft.getInstance();
             if (mc.getSingleplayerServer() != null) {
-                ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, recipeId);
-                return mc.getSingleplayerServer().getRecipeManager().byKey(key).orElse(null);
+                return mc.getSingleplayerServer().getRecipeManager().byKey(recipeId).orElse(null);
             }
         } catch (RuntimeException ignored) {
             // dedicated client / early init

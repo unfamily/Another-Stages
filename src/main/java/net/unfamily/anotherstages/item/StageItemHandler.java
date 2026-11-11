@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -61,7 +61,7 @@ public class StageItemHandler {
     public static void loadAll(ResourceManager resourceManagerOrNull) {
         DATAPACK_ITEM_RESTRICTIONS.clear();
         try {
-            Map<Identifier, JsonElement> merged = collectMerged(resourceManagerOrNull);
+            Map<ResourceLocation, JsonElement> merged = collectMerged(resourceManagerOrNull);
             for (var e : LoadJson.orderedEntries(merged)) {
                 if (!e.getValue().isJsonObject()) {
                     continue;
@@ -80,13 +80,13 @@ public class StageItemHandler {
         }
     }
 
-    private static Map<Identifier, JsonElement> collectBootstrap() {
+    private static Map<ResourceLocation, JsonElement> collectBootstrap() {
         return collectMerged(null);
     }
 
     /** ResourceManager first, then jars + live filesystem roots (filesystem wins on same id). */
-    private static Map<Identifier, JsonElement> collectMerged(ResourceManager resourceManagerOrNull) {
-        Map<Identifier, JsonElement> merged = new java.util.LinkedHashMap<>();
+    private static Map<ResourceLocation, JsonElement> collectMerged(ResourceManager resourceManagerOrNull) {
+        Map<ResourceLocation, JsonElement> merged = new java.util.LinkedHashMap<>();
         if (resourceManagerOrNull != null) {
             merged.putAll(LoadJson.collectMergedJsonForTypes(resourceManagerOrNull, ACCEPTED_TYPES));
         }

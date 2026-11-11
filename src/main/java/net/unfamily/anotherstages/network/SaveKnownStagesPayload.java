@@ -4,10 +4,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.gui.stagegen.KnownStageDraft;
 import net.unfamily.anotherstages.stagegen.StageGenFileWriter;
@@ -18,7 +16,7 @@ import java.util.List;
 /** C2S: rewrite Stage Generator known-stages catalog (JSON or Kube). */
 public record SaveKnownStagesPayload(List<String> knownJsons) implements CustomPacketPayload {
     public static final Type<SaveKnownStagesPayload> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "save_known_stages"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "save_known_stages"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, SaveKnownStagesPayload> STREAM_CODEC =
             StreamCodec.composite(
@@ -35,8 +33,8 @@ public record SaveKnownStagesPayload(List<String> knownJsons) implements CustomP
         if (player == null) {
             return;
         }
-        if (!player.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) {
-            AnotherStages.LOGGER.warn("Known stages save denied for {}", player.getGameProfile().name());
+        if (!player.hasPermissions(2)) {
+            AnotherStages.LOGGER.warn("Known stages save denied for {}", player.getGameProfile().getName());
             return;
         }
         try {

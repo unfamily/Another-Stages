@@ -5,10 +5,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
 import net.unfamily.anotherstages.stagegen.StageGenFileWriter;
@@ -20,7 +18,7 @@ import net.unfamily.anotherstages.stagegen.StageGenFileWriter;
 public record DeleteStageGeneratorPayload(String category, String id, int kubeEntryIndex)
         implements CustomPacketPayload {
     public static final Type<DeleteStageGeneratorPayload> TYPE =
-            new Type<>(Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "delete_stage_generator"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "delete_stage_generator"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DeleteStageGeneratorPayload> STREAM_CODEC =
             StreamCodec.composite(
@@ -41,7 +39,7 @@ public record DeleteStageGeneratorPayload(String category, String id, int kubeEn
         if (player == null) {
             return;
         }
-        if (!player.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) {
+        if (!player.hasPermissions(2)) {
             player.sendSystemMessage(Component.translatable(
                     "screen.another_stages.stage_generator.save.denied"));
             return;

@@ -45,7 +45,7 @@ public abstract class AbstractFurnaceBlockEntityMixin {
         boolean blocked = RecipeStageGate.isBlockedForMachine(holder.id(), furnace, level);
         if (AsConfig.loggingEnabled()) {
             AnotherStages.LOGGER.info(
-                    "Furnace gate recipe={} blocked={}", holder.id().identifier(), blocked);
+                    "Furnace gate recipe={} blocked={}", holder.id(), blocked);
         }
         return blocked ? Optional.empty() : recipe;
     }

@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "net.unfamily.anotherstages.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "refmap": "another_stages.refmap.json",
   "mixins": [
     "CraftingMenuMixin",
@@ -19,10 +19,7 @@
   "client": [
     "BlockAppearanceMixin",
     "BlockRenderShapeMixin",
-    "LevelRendererBreakOverlayMixin",
-    "ClientLevelBreakEffectMixin",
-    "ItemStackHoverNameMixin",
-    "ItemModelResolverMixin"
+    "ItemStackHoverNameMixin"
   ],
   "minVersion": "0.8"
 }

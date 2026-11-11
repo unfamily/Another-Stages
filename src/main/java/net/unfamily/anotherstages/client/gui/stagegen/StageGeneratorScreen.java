@@ -1,21 +1,19 @@
 package net.unfamily.anotherstages.client.gui.stagegen;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.anotherstages.client.gui.AsButton;
 import net.unfamily.anotherstages.client.gui.AsToggle;
 import net.unfamily.anotherstages.config.AsConfig;
@@ -114,7 +112,9 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     private boolean refocusSearch;
 
     public StageGeneratorScreen(StageGeneratorMenu menu, Inventory inv, Component title) {
-        super(menu, inv, title, StageGeneratorMenu.GUI_WIDTH, StageGeneratorMenu.GUI_HEIGHT);
+        super(menu, inv, title);
+        this.imageWidth = StageGeneratorMenu.GUI_WIDTH;
+        this.imageHeight = StageGeneratorMenu.GUI_HEIGHT;
     }
 
     private StageGenSession session() {
@@ -147,7 +147,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
 
     private void rebuild() {
         if (scrollList != null) {
-            savedScroll = scrollList.scrollAmount();
+            savedScroll = scrollList.getScrollAmount();
         }
         clearWidgets();
         scrollList = null;
@@ -615,7 +615,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             }
             draft.kubeEntryIndex = max + 1;
         }
-        ClientPacketDistributor.sendToServer(new SaveStageGeneratorPayload(draft.toJson().toString()));
+        PacketDistributor.sendToServer(new SaveStageGeneratorPayload(draft.toJson().toString()));
     }
 
     /** Silent rewrite of known-stages catalog (all ready rows). */
@@ -636,7 +636,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 blobs.add(d.toJson().toString());
             }
         }
-        ClientPacketDistributor.sendToServer(new SaveKnownStagesPayload(blobs));
+        PacketDistributor.sendToServer(new SaveKnownStagesPayload(blobs));
     }
 
     private void buildKnownStagesList() {
@@ -712,12 +712,11 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         addFormLabel(FORM_LEFT, 70, FORM_WIDTH, "screen.another_stages.stage_generator.stages.id_hint");
         stageIdBox = new SuggestingEditBox(
                 font,
-                leftPos + FORM_LEFT,
-                topPos + 82,
                 FORM_WIDTH,
                 14,
                 Component.translatable("screen.another_stages.stage_generator.table.col.id"),
                 StageGenSuggestions::stageIds);
+        stageIdBox.setPosition(leftPos + FORM_LEFT, topPos + 82);
         stageIdBox.setMaxLength(128);
         stageIdBox.setValue(row.stage == null ? "" : row.stage);
         stageIdBox.setResponder(v -> row.stage = v == null ? "" : v.trim());
@@ -818,7 +817,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             return;
         }
         int deletedKubeIndex = d.kubeEntryIndex;
-        ClientPacketDistributor.sendToServer(
+        PacketDistributor.sendToServer(
                 new DeleteStageGeneratorPayload(d.category.name(), d.id == null ? "" : d.id, deletedKubeIndex));
         RestrictionDraft.Category cat = d.category;
         session().removeSelected();
@@ -1220,7 +1219,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             menu.clearGhostQuiet();
             return;
         }
-        Identifier id = Identifier.tryParse(value.contains(":") ? value : "minecraft:" + value);
+        ResourceLocation id = ResourceLocation.tryParse(value.contains(":") ? value : "minecraft:" + value);
         if (id == null) {
             menu.clearGhostQuiet();
             return;
@@ -1317,12 +1316,11 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         addFormLabel(FORM_LEFT, 78, FORM_WIDTH, "screen.another_stages.stage_generator.stages.id_hint");
         stageIdBox = new SuggestingEditBox(
                 font,
-                leftPos + FORM_LEFT,
-                topPos + 90,
                 FORM_WIDTH,
                 14,
                 Component.translatable("screen.another_stages.stage_generator.table.col.id"),
                 StageGenSuggestions::stageIds);
+        stageIdBox.setPosition(leftPos + FORM_LEFT, topPos + 90);
         stageIdBox.setMaxLength(128);
         stageIdBox.setValue(row.id == null ? "" : row.id);
         stageIdBox.setResponder(v -> row.id = v == null ? "" : v.trim());
@@ -1645,8 +1643,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        extractTransparentBackground(graphics);
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = leftPos;
         int y = topPos;
         graphics.fill(x, y, x + imageWidth, y + imageHeight, 0xFF1A1A1E);
@@ -1671,19 +1668,20 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Always use the container render path so JEI/EMI/REI keep a normal inventory screen.
         // Slots stay active but parked off-screen (Slot.x/y are final); draw them here when UI is on.
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+        this.renderTransparentBackground(graphics);
+        super.render(graphics, mouseX, mouseY, partialTick);
         if (menu.slotsVisible()) {
-            extractVisualInventory(graphics, mouseX, mouseY);
+            renderVisualInventory(graphics, mouseX, mouseY);
         }
         if (stageIdBox != null) {
-            stageIdBox.extractSuggestions(graphics, font);
+            stageIdBox.renderSuggestions(graphics, font);
         }
     }
 
-    private void extractVisualInventory(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    private void renderVisualInventory(GuiGraphics graphics, int mouseX, int mouseY) {
         hoveredSlot = findVisualSlot(mouseX, mouseY);
         for (int i = 0; i < menu.slots.size(); i++) {
             Slot slot = menu.slots.get(i);
@@ -1693,8 +1691,8 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             }
             int x = leftPos + StageGeneratorMenu.visualSlotX(i);
             int y = topPos + StageGeneratorMenu.visualSlotY(i);
-            graphics.item(stack, x, y);
-            graphics.itemDecorations(font, stack, x, y);
+            graphics.renderItem(stack, x, y);
+            graphics.renderItemDecorations(font, stack, x, y);
         }
         if (hoveredSlot != null && hoveredSlot.isHighlightable()) {
             int hx = leftPos + StageGeneratorMenu.visualSlotX(hoveredSlot.index) - 1;
@@ -1718,48 +1716,48 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     @Override
-    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         boolean scrollbarBusy = scrollList != null && scrollList.isDraggingScrollbar();
         for (EditBox box : formBoxes) {
             if (box == null || !box.isFocused()) {
                 continue;
             }
-            if (box.keyPressed(event)) {
+            if (box.keyPressed(keyCode, scanCode, modifiers)) {
                 return true;
             }
-            if (minecraft != null && minecraft.options.keyInventory.matches(event)) {
+            if (minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
                 return true;
             }
             // ESC while typing: unfocus only — do not close / navigateUp.
-            if (event.key() == 256) {
+            if (keyCode == 256) {
                 box.setFocused(false);
                 setFocused(null);
                 return true;
             }
         }
-        if (scrollbarBusy && minecraft != null && minecraft.options.keyInventory.matches(event)) {
+        if (scrollbarBusy && minecraft != null && minecraft.options.keyInventory.matches(keyCode, scanCode)) {
             return true;
         }
-        if (scrollbarBusy && event.key() == 256) {
+        if (scrollbarBusy && keyCode == 256) {
             return true;
         }
-        return super.keyPressed(event);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         // Bottom / inv-side action buttons win over the scroll list.
-        if (isOverActionButtons(event.x(), event.y())) {
+        if (isOverActionButtons(mouseX, mouseY)) {
             List<? extends net.minecraft.client.gui.components.events.GuiEventListener> kids =
                     new ArrayList<>(children());
             for (int i = kids.size() - 1; i >= 0; i--) {
                 var child = kids.get(i);
-                if (child instanceof AsButton && child.isMouseOver(event.x(), event.y())
-                        && child.mouseClicked(event, doubleClick)) {
+                if (child instanceof AsButton && child.isMouseOver(mouseX, mouseY)
+                        && child.mouseClicked(mouseX, mouseY, button)) {
                     setFocused(child);
                     return true;
                 }
@@ -1767,19 +1765,19 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         }
         //Slots are parked off-screen; handle the drawn inventory UI ourselves.
         if (menu.slotsVisible()) {
-            Slot visual = findVisualSlot(event.x(), event.y());
+            Slot visual = findVisualSlot(mouseX, mouseY);
             if (visual != null) {
-                ContainerInput input = event.hasShiftDown() ? ContainerInput.QUICK_MOVE : ContainerInput.PICKUP;
-                slotClicked(visual, visual.index, event.button(), input);
+                ClickType click = SuggestingEditBox.hasShiftDown() ? ClickType.QUICK_MOVE : ClickType.PICKUP;
+                slotClicked(visual, visual.index, button, click);
                 return true;
             }
         }
-        if (scrollList != null && scrollList.beginScrollbarDrag(event)) {
+        if (scrollList != null && scrollList.beginScrollbarDrag(mouseX, mouseY, button)) {
             setFocused(scrollList);
             setDragging(true);
             return true;
         }
-        return super.mouseClicked(event, doubleClick);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private boolean isOverActionButtons(double mouseX, double mouseY) {
@@ -1803,29 +1801,29 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
-        if (scrollList != null && (scrollList.isDraggingScrollbar() || scrollList.isOverScrollbar(event.x(), event.y()))) {
-            if (scrollList.mouseDragged(event, dx, dy)) {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy) {
+        if (scrollList != null && (scrollList.isDraggingScrollbar() || scrollList.isOverScrollbar(mouseX, mouseY))) {
+            if (scrollList.mouseDragged(mouseX, mouseY, button, dx, dy)) {
                 return true;
             }
         }
         if (scrollList != null && scrollList.isDraggingScrollbar()) {
             return true;
         }
-        return super.mouseDragged(event, dx, dy);
+        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (scrollList != null && scrollList.isDraggingScrollbar()) {
-            scrollList.mouseReleased(event);
+            scrollList.mouseReleased(mouseX, mouseY, button);
             setDragging(false);
             return true;
         }
         if (scrollList != null) {
             scrollList.endScrollbarDrag();
         }
-        return super.mouseReleased(event);
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

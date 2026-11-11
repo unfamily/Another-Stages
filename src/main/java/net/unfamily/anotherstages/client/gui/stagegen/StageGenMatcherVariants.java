@@ -1,7 +1,7 @@
 package net.unfamily.anotherstages.client.gui.stagegen;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +25,7 @@ public final class StageGenMatcherVariants {
         if (stack.isEmpty()) {
             return variants;
         }
-        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (itemId == null) {
             return variants;
         }
@@ -33,8 +33,8 @@ public final class StageGenMatcherVariants {
 
         var itemHolder = BuiltInRegistries.ITEM.wrapAsHolder(stack.getItem());
         BuiltInRegistries.ITEM.getTags()
-                .filter(named -> named.contains(itemHolder))
-                .map(named -> "#" + named.key().location())
+                .filter(pair -> pair.getSecond().contains(itemHolder))
+                .map(pair -> "#" + pair.getFirst().location())
                 .sorted()
                 .forEach(tag -> {
                     if (!variants.contains(tag)) {

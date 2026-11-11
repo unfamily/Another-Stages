@@ -11,7 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import net.unfamily.anotherstages.AnotherStages;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public final class StageBlockEvents {
     }
 
     @SubscribeEvent
-    public static void onBreak(BreakBlockEvent event) {
+    public static void onBreak(BlockEvent.BreakEvent event) {
         if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }

@@ -1,14 +1,12 @@
 package net.unfamily.anotherstages.compat.jei;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.category.extensions.IRecipeCategoryDecorator;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.unfamily.anotherstages.recipe.StageRecipeRvHelper;
 import net.unfamily.anotherstages.recipe.StageRecipeRule;
@@ -33,10 +31,10 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             T recipe,
             IRecipeCategory<T> recipeCategory,
             IRecipeSlotsView recipeSlotsView,
-            GuiGraphicsExtractor guiGraphics,
+            GuiGraphics guiGraphics,
             double mouseX,
             double mouseY) {
-        Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
+        ResourceLocation recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
         if (StageRecipeRvHelper.modeFor(recipeId, holder, recipe) != StageRecipeRvHelper.Mode.OVERLAY) {
             return;
@@ -47,12 +45,11 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
 
         StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder, recipe);
         int[] box = StageRecipeRvHelper.lockBox(width, height, BADGE_SIZE, PAD, corner);
-        RenderPipeline pipeline = RenderPipelines.GUI_TEXTURED;
-        Identifier texture = StageRecipeRvHelper.lockTexture();
+        ResourceLocation texture = StageRecipeRvHelper.lockTexture();
         int texSize = StageRecipeRvHelper.lockTextureSize();
         guiGraphics.blit(
-                pipeline, texture, box[0], box[1], 0f, 0f,
-                BADGE_SIZE, BADGE_SIZE, texSize, texSize, texSize, texSize);
+                texture, box[0], box[1], 0f, 0f,
+                BADGE_SIZE, BADGE_SIZE, texSize, texSize);
     }
 
     @Override
@@ -63,7 +60,7 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             IRecipeSlotsView recipeSlotsView,
             double mouseX,
             double mouseY) {
-        Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
+        ResourceLocation recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
         List<StageRecipeRule> overlayRules = StageRecipeRvHelper.activeOverlayRules(recipeId, holder, recipe);
         if (overlayRules.isEmpty()) {

@@ -20,7 +20,7 @@ public final class AsAttachmentTypes {
     public static final Supplier<AttachmentType<String>> MACHINE_OWNER = ATTACHMENT_TYPES.register(
             "machine_owner",
             () -> AttachmentType.builder(() -> "")
-                    .serialize(Codec.STRING.fieldOf("uuid"), s -> s != null && !s.isEmpty())
+                    .serialize(Codec.STRING, s -> s != null && !s.isEmpty())
                     .build());
 
     private AsAttachmentTypes() {}

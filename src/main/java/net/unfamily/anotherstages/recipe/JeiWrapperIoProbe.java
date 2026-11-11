@@ -1,6 +1,6 @@
 package net.unfamily.anotherstages.recipe;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import org.jetbrains.annotations.Nullable;
@@ -16,14 +16,14 @@ import java.util.Map;
  * such as Ancient Tablet / Factory JEI recipes.
  */
 public final class JeiWrapperIoProbe {
-    private static final Map<String, Identifier> CLASS_TO_RECIPE_TYPE = Map.of(
-            "AncientTabletJeiRecipe", Identifier.fromNamespaceAndPath("iska_utils", "ancient_tab"),
-            "FactoryJeiRecipe", Identifier.fromNamespaceAndPath("iska_utils", "factory"));
+    private static final Map<String, ResourceLocation> CLASS_TO_RECIPE_TYPE = Map.of(
+            "AncientTabletJeiRecipe", ResourceLocation.fromNamespaceAndPath("iska_utils", "ancient_tab"),
+            "FactoryJeiRecipe", ResourceLocation.fromNamespaceAndPath("iska_utils", "factory"));
 
     private JeiWrapperIoProbe() {}
 
     @Nullable
-    public static Identifier inferredRecipeType(@Nullable Object recipeView) {
+    public static ResourceLocation inferredRecipeType(@Nullable Object recipeView) {
         if (recipeView == null) {
             return null;
         }

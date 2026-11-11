@@ -1,6 +1,6 @@
 package net.unfamily.anotherstages.recipe;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.crafting.Recipe;
@@ -23,7 +23,7 @@ import java.util.UUID;
 public final class RecipeStageGate {
     private RecipeStageGate() {}
 
-    public static boolean isBlockedForPlayer(@Nullable Identifier recipeId, @Nullable Player player, @Nullable Level level) {
+    public static boolean isBlockedForPlayer(@Nullable ResourceLocation recipeId, @Nullable Player player, @Nullable Level level) {
         if (recipeId == null || player == null) {
             return false;
         }
@@ -34,7 +34,7 @@ public final class RecipeStageGate {
         if (recipeKey == null) {
             return false;
         }
-        return isBlockedForPlayer(recipeKey.identifier(), player, level);
+        return isBlockedForPlayer(recipeKey.location(), player, level);
     }
 
     /**
@@ -42,7 +42,7 @@ public final class RecipeStageGate {
      * No {@link MachineOwners} entry is normal — bridge still consults providers.
      */
     public static boolean isBlockedForMachine(
-            @Nullable Identifier recipeId, @Nullable BlockEntity be, @Nullable Level level) {
+            @Nullable ResourceLocation recipeId, @Nullable BlockEntity be, @Nullable Level level) {
         if (recipeId == null) {
             return false;
         }
@@ -55,6 +55,6 @@ public final class RecipeStageGate {
         if (recipeKey == null) {
             return false;
         }
-        return isBlockedForMachine(recipeKey.identifier(), be, level);
+        return isBlockedForMachine(recipeKey.location(), be, level);
     }
 }

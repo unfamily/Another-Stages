@@ -35,7 +35,7 @@ public final class CallActionCommand {
             return builder.buildFuture();
         }
         List<String> names = server.getPlayerList().getPlayers().stream()
-                .map(p -> p.getGameProfile().name())
+                .map(p -> p.getGameProfile().getName())
                 .collect(Collectors.toList());
         names.add("@p");
         names.add("@a");

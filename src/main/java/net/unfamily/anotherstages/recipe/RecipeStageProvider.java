@@ -1,6 +1,6 @@
 package net.unfamily.anotherstages.recipe;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.unfamily.iskalib.crafting.RecipeBlockBridge;
@@ -20,7 +20,7 @@ public final class RecipeStageProvider implements RecipeBlockBridge.Provider {
 
     @Override
     public boolean isBlocked(
-            Identifier recipeId,
+            ResourceLocation recipeId,
             @Nullable UUID ownerUuid,
             @Nullable Level level,
             @Nullable ServerPlayer onlinePlayer) {

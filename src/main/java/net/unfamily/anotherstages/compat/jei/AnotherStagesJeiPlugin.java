@@ -5,8 +5,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import mezz.jei.api.recipe.types.IRecipeHolderType;
-import mezz.jei.api.recipe.types.IRecipeType;
+import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.registration.IAdvancedRegistration;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
@@ -14,12 +13,11 @@ import mezz.jei.api.runtime.IJeiRuntime;
 import net.unfamily.anotherstages.client.gui.stagegen.StageGeneratorScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.ClientStageCache;
@@ -43,14 +41,14 @@ import java.util.Set;
  */
 @JeiPlugin
 public final class AnotherStagesJeiPlugin implements IModPlugin {
-    private static final Identifier UID = Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "jei");
+    private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(AnotherStages.MOD_ID, "jei");
     private static IJeiRuntime runtime;
     private static final Set<Item> currentlyHiddenItems = new HashSet<>();
-    private static final Map<IRecipeType<?>, Set<Object>> currentlyHiddenRecipes = new HashMap<>();
+    private static final Map<RecipeType<?>, Set<Object>> currentlyHiddenRecipes = new HashMap<>();
     private static String lastFingerprint = "";
 
     @Override
-    public Identifier getPluginUid() {
+    public ResourceLocation getPluginUid() {
         return UID;
     }
 
@@ -63,23 +61,14 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
 
     @Override
     public void registerAdvanced(IAdvancedRegistration registration) {
-        Set<Identifier> seen = new HashSet<>();
+        Set<ResourceLocation> seen = new HashSet<>();
         registration.getJeiHelpers().getAllRecipeTypes().forEach(type -> {
             if (seen.add(type.getUid())) {
                 @SuppressWarnings({"unchecked", "rawtypes"})
-                IRecipeType rawType = type;
+                RecipeType rawType = type;
                 registration.addRecipeCategoryDecorator(rawType, StageRecipeLockDecorator.INSTANCE);
             }
         });
-        // Fallback for vanilla holder types not yet exposed as JEI categories
-        for (RecipeType<?> vanillaType : BuiltInRegistries.RECIPE_TYPE) {
-            IRecipeHolderType<?> holderType = IRecipeHolderType.create(vanillaType);
-            if (seen.add(holderType.getUid())) {
-                @SuppressWarnings({"unchecked", "rawtypes"})
-                IRecipeType rawType = holderType;
-                registration.addRecipeCategoryDecorator(rawType, StageRecipeLockDecorator.INSTANCE);
-            }
-        }
     }
 
     @Override
@@ -180,19 +169,19 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
             return;
         }
 
-        Map<IRecipeType<?>, Set<Object>> shouldHide = new HashMap<>();
+        Map<RecipeType<?>, Set<Object>> shouldHide = new HashMap<>();
         List<IRecipeCategory<?>> categories = recipeManager.createRecipeCategoryLookup()
                 .includeHidden()
                 .get()
                 .toList();
 
         for (IRecipeCategory<?> category : categories) {
-            IRecipeType<?> type = category.getRecipeType();
+            RecipeType<?> type = category.getRecipeType();
             recipeManager.createRecipeLookup(type)
                     .includeHidden()
                     .get()
                     .forEach(recipe -> {
-                        Identifier id = StageRecipeRvHelper.idOf(recipe, category);
+                        ResourceLocation id = StageRecipeRvHelper.idOf(recipe, category);
                         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, id);
                         if (StageRecipeRvHelper.modeFor(id, holder, recipe) == StageRecipeRvHelper.Mode.HIDE) {
                             shouldHide.computeIfAbsent(type, t -> new HashSet<>()).add(recipe);
@@ -200,8 +189,8 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
                     });
         }
 
-        for (Map.Entry<IRecipeType<?>, Set<Object>> entry : currentlyHiddenRecipes.entrySet()) {
-            IRecipeType type = entry.getKey();
+        for (Map.Entry<RecipeType<?>, Set<Object>> entry : currentlyHiddenRecipes.entrySet()) {
+            RecipeType type = entry.getKey();
             Set<Object> wasHidden = entry.getValue();
             Set<Object> nowHidden = shouldHide.getOrDefault(type, Set.of());
             List toRestore = new ArrayList();
@@ -215,8 +204,8 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
             }
         }
 
-        for (Map.Entry<IRecipeType<?>, Set<Object>> entry : shouldHide.entrySet()) {
-            IRecipeType type = entry.getKey();
+        for (Map.Entry<RecipeType<?>, Set<Object>> entry : shouldHide.entrySet()) {
+            RecipeType type = entry.getKey();
             Set<Object> nowHidden = entry.getValue();
             Set<Object> wasHidden = currentlyHiddenRecipes.getOrDefault(type, Set.of());
             List toHide = new ArrayList();
@@ -265,9 +254,9 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
         if (currentlyHiddenRecipes.isEmpty()) {
             return;
         }
-        for (Map.Entry<IRecipeType<?>, Set<Object>> entry : currentlyHiddenRecipes.entrySet()) {
+        for (Map.Entry<RecipeType<?>, Set<Object>> entry : currentlyHiddenRecipes.entrySet()) {
             if (!entry.getValue().isEmpty()) {
-                recipeManager.unhideRecipes((IRecipeType) entry.getKey(), (Collection) entry.getValue());
+                recipeManager.unhideRecipes((RecipeType) entry.getKey(), (Collection) entry.getValue());
             }
         }
         currentlyHiddenRecipes.clear();

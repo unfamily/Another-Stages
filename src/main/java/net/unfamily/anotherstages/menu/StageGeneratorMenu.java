@@ -5,7 +5,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -150,7 +150,7 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
     }
 
     @Override
-    public void clicked(int slotIndex, int buttonNum, ContainerInput containerInput, Player player) {
+    public void clicked(int slotIndex, int buttonNum, ClickType clickType, Player player) {
         if (!slotsUiVisible) {
             return;
         }
@@ -163,7 +163,7 @@ public final class StageGeneratorMenu extends AbstractContainerMenu {
             }
             return;
         }
-        super.clicked(slotIndex, buttonNum, containerInput, player);
+        super.clicked(slotIndex, buttonNum, clickType, player);
     }
 
     @Override

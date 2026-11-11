@@ -36,7 +36,7 @@ public abstract class FastFurnaceRecipeMixin {
         boolean blocked = RecipeStageGate.isBlockedForMachine(holder.id(), be, level);
         if (AsConfig.loggingEnabled()) {
             AnotherStages.LOGGER.info(
-                    "FastFurnace gate recipe={} blocked={}", holder.id().identifier(), blocked);
+                    "FastFurnace gate recipe={} blocked={}", holder.id(), blocked);
         }
         if (!blocked) {
             return holder;

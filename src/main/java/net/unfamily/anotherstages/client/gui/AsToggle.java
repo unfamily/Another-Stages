@@ -2,10 +2,9 @@ package net.unfamily.anotherstages.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.BooleanSupplier;
@@ -37,13 +36,13 @@ public final class AsToggle extends AbstractWidget {
     }
 
     @Override
-    public void onClick(MouseButtonEvent event, boolean doubleClick) {
+    public void onClick(double mouseX, double mouseY) {
         AsUi.playClick();
         onToggle.accept(!isOn());
     }
 
     @Override
-    protected void extractWidgetRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         boolean on = isOn();
         int bg = on ? BG_TRUE : BG_FALSE;
         int border = on ? BORDER_TRUE : BORDER_FALSE;
@@ -62,7 +61,7 @@ public final class AsToggle extends AbstractWidget {
                 ? "screen.another_stages.stage_generator.bool.true"
                 : "screen.another_stages.stage_generator.bool.false").getString();
         int tw = font.width(label);
-        graphics.text(font, label, x0 + (getWidth() - tw) / 2, y0 + 4, 0xFFFFFFFF);
+        graphics.drawString(font, label, x0 + (getWidth() - tw) / 2, y0 + 4, 0xFFFFFFFF);
     }
 
     @Override

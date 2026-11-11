@@ -3,7 +3,7 @@ package net.unfamily.anotherstages.mixin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.BlockAndLightGetter;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.anotherstages.block.StageBlockHandler;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Client-side mimic: locked blocks report the replacement block's appearance.
+ * Client-side mimic via NeoForge {@code Block#getAppearance} when present.
  */
 @Mixin(Block.class)
 public abstract class BlockAppearanceMixin {
@@ -24,10 +24,11 @@ public abstract class BlockAppearanceMixin {
             method = "getAppearance",
             at = @At("HEAD"),
             cancellable = true,
-            remap = false)
+            remap = false,
+            require = 0)
     private void anotherStages$mimicAppearance(
             BlockState state,
-            BlockAndLightGetter level,
+            BlockAndTintGetter level,
             BlockPos pos,
             Direction side,
             @Nullable BlockState queryState,
