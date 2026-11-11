@@ -10,12 +10,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.display.RecipeDisplay;
-import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
@@ -278,17 +275,27 @@ public final class StageRecipeHandler {
     public static List<StageRecipeRule> findActiveRulesClient(
             Identifier recipeId,
             @Nullable RecipeHolder<?> holder) {
+        return findActiveRulesClient(recipeId, holder, null);
+    }
+
+    /**
+     * @param recipeView optional JEI recipe object (e.g. Utils wrapper) for I/O / type when holder is null
+     */
+    public static List<StageRecipeRule> findActiveRulesClient(
+            Identifier recipeId,
+            @Nullable RecipeHolder<?> holder,
+            @Nullable Object recipeView) {
         List<StageRecipeRule> active = new ArrayList<>();
         if (recipeId == null || ruleCount() == 0) {
             return active;
         }
-        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder);
+        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, recipeView);
         String recipeIdStr = recipeId.toString();
         for (StageRecipeRule rule : candidates) {
             if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
                 continue;
             }
-            if (!matchersPass(rule, holder, recipeIdStr)) {
+            if (!matchersPass(rule, holder, recipeIdStr, recipeView)) {
                 continue;
             }
             if (ruleAppliesClient(rule)) {
@@ -394,7 +401,7 @@ public final class StageRecipeHandler {
             return false;
         }
         RecipeHolder<?> holder = resolveHolder(recipeId, level);
-        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder);
+        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, null);
         if (candidates.isEmpty()) {
             return false;
         }
@@ -403,7 +410,7 @@ public final class StageRecipeHandler {
             if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
                 continue;
             }
-            if (!matchersPass(rule, holder, recipeIdStr)) {
+            if (!matchersPass(rule, holder, recipeIdStr, null)) {
                 continue;
             }
             if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {
@@ -415,9 +422,13 @@ public final class StageRecipeHandler {
 
     /**
      * Filters candidates by recipe id / type / I/O matchers (AND).
-     * Without a holder, only {@code recipes} (incl. {@code regex:}) can be checked.
+     * Without a holder, {@code recipes} always works; JEI wrappers can supply type/I/O via {@code recipeView}.
      */
-    private static boolean matchersPass(StageRecipeRule rule, @Nullable RecipeHolder<?> holder, String recipeIdStr) {
+    private static boolean matchersPass(
+            StageRecipeRule rule,
+            @Nullable RecipeHolder<?> holder,
+            String recipeIdStr,
+            @Nullable Object recipeView) {
         boolean hasMatchers = !rule.recipes.isEmpty()
                 || !rule.recipeTypes.isEmpty()
                 || !rule.inputs.isEmpty()
@@ -428,19 +439,48 @@ public final class StageRecipeHandler {
         if (holder != null) {
             return matchesIo(rule, holder, recipeIdStr);
         }
-        if (!rule.recipeTypes.isEmpty() || !rule.inputs.isEmpty() || !rule.outputs.isEmpty()) {
-            return false;
-        }
-        return rule.recipes.isEmpty() || StageIdMatchers.idInList(recipeIdStr, rule.recipes);
+        return matchesIoWrapper(rule, recipeIdStr, recipeView);
     }
 
-    private static List<StageRecipeRule> collectCandidates(Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+    /** Holder-less JEI wrapper path (Utils Ancient Tablet / Factory, etc.). */
+    private static boolean matchesIoWrapper(
+            StageRecipeRule rule, String recipeIdStr, @Nullable Object recipeView) {
+        if (!rule.recipes.isEmpty() && !StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
+            return false;
+        }
+        if (!rule.recipeTypes.isEmpty()) {
+            Identifier typeId = JeiWrapperIoProbe.inferredRecipeType(recipeView);
+            if (typeId == null || !StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
+                return false;
+            }
+        }
+        if (!rule.outputs.isEmpty() && !JeiWrapperIoProbe.outputsMatch(recipeView, rule.outputs)) {
+            return false;
+        }
+        if (!rule.inputs.isEmpty() && !JeiWrapperIoProbe.inputsMatch(recipeView, rule.inputs)) {
+            return false;
+        }
+        return true;
+    }
+
+    private static List<StageRecipeRule> collectCandidates(
+            Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+        return collectCandidates(recipeId, holder, null);
+    }
+
+    private static List<StageRecipeRule> collectCandidates(
+            Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         List<StageRecipeRule> out = new ArrayList<>();
         out.addAll(BY_RECIPE_ID.getOrDefault(recipeId, Collections.emptyList()));
         if (holder != null) {
             Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
             if (typeId != null) {
                 out.addAll(BY_RECIPE_TYPE.getOrDefault(typeId, Collections.emptyList()));
+            }
+        } else {
+            Identifier wrapperType = JeiWrapperIoProbe.inferredRecipeType(recipeView);
+            if (wrapperType != null) {
+                out.addAll(BY_RECIPE_TYPE.getOrDefault(wrapperType, Collections.emptyList()));
             }
         }
         for (StageRecipeRule io : IO_RULES) {
@@ -458,7 +498,8 @@ public final class StageRecipeHandler {
 
     /**
      * AND of every non-empty matcher on the rule ({@code recipes}, {@code recipe_types},
-     * {@code outputs}, {@code inputs}). Output uses {@link Recipe#display()} result slots.
+     * {@code outputs}, {@code inputs}). I/O uses {@link RecipeIoProbe} (display/placement first,
+     * then ingredient/result probing like Kube when display is empty).
      */
     private static boolean matchesIo(StageRecipeRule rule, RecipeHolder<?> holder, String recipeIdStr) {
         Recipe<?> recipe = holder.value();
@@ -471,52 +512,14 @@ public final class StageRecipeHandler {
                 return false;
             }
         }
-        if (!rule.outputs.isEmpty() && !outputMatches(recipe, rule.outputs)) {
+        if (!rule.outputs.isEmpty() && !RecipeIoProbe.outputsMatch(recipe, rule.outputs)) {
             return false;
         }
-        if (!rule.inputs.isEmpty()) {
-            boolean any = false;
-            for (Ingredient ingredient : recipe.placementInfo().ingredients()) {
-                boolean hit = ingredient.items().anyMatch(itemHolder -> StageIdMatchers.matchesItem(itemHolder.value(), rule.inputs));
-                if (hit) {
-                    any = true;
-                    break;
-                }
-            }
-            if (!any) {
-                return false;
-            }
+        if (!rule.inputs.isEmpty() && !RecipeIoProbe.inputsMatch(recipe, rule.inputs)) {
+            return false;
         }
         return true;
     }
-
-    /** True if any display result item matches {@code outputs} (id / #tag / @mod / regex:). Fail-closed if none resolve. */
-    private static boolean outputMatches(Recipe<?> recipe, List<String> outputs) {
-        for (RecipeDisplay display : recipe.display()) {
-            if (slotDisplayMatches(display.result(), outputs)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean slotDisplayMatches(SlotDisplay slot, List<String> outputs) {
-        if (slot instanceof SlotDisplay.ItemStackSlotDisplay stackDisplay) {
-            return StageIdMatchers.matchesItem(stackDisplay.stack().item().value(), outputs);
-        }
-        if (slot instanceof SlotDisplay.ItemSlotDisplay itemDisplay) {
-            return StageIdMatchers.matchesItem(itemDisplay.item().value(), outputs);
-        }
-        if (slot instanceof SlotDisplay.Composite composite) {
-            for (SlotDisplay child : composite.contents()) {
-                if (slotDisplayMatches(child, outputs)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private static boolean ruleApplies(
             StageRecipeRule rule,
             @Nullable UUID ownerUuid,

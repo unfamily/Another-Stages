@@ -1,8 +1,12 @@
 package net.unfamily.anotherstages.recipe;
 
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.StageAprilFools;
@@ -42,10 +46,15 @@ public final class StageRecipeRvHelper {
     private StageRecipeRvHelper() {}
 
     public static Mode modeFor(@Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+        return modeFor(recipeId, holder, null);
+    }
+
+    public static Mode modeFor(
+            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         if (recipeId == null || !StageRecipeHandler.hasLoadedRules()) {
             return Mode.NONE;
         }
-        List<StageRecipeRule> active = StageRecipeHandler.findActiveRulesClient(recipeId, holder);
+        List<StageRecipeRule> active = StageRecipeHandler.findActiveRulesClient(recipeId, holder, recipeView);
         Mode strongest = Mode.NONE;
         for (StageRecipeRule rule : active) {
             Mode mode = "hide".equals(StageRecipeHandler.rvMode(rule)) ? Mode.HIDE : Mode.OVERLAY;
@@ -75,11 +84,16 @@ public final class StageRecipeRvHelper {
 
     public static List<StageRecipeRule> activeOverlayRules(
             @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+        return activeOverlayRules(recipeId, holder, null);
+    }
+
+    public static List<StageRecipeRule> activeOverlayRules(
+            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         List<StageRecipeRule> out = new ArrayList<>();
         if (recipeId == null) {
             return out;
         }
-        for (StageRecipeRule rule : StageRecipeHandler.findActiveRulesClient(recipeId, holder)) {
+        for (StageRecipeRule rule : StageRecipeHandler.findActiveRulesClient(recipeId, holder, recipeView)) {
             if ("overlay".equals(StageRecipeHandler.rvMode(rule))) {
                 out.add(rule);
             }
@@ -89,7 +103,12 @@ public final class StageRecipeRvHelper {
 
     /** Corner from the first active overlay rule (default top_right). */
     public static Corner overlayCorner(@Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder) {
-        for (StageRecipeRule rule : activeOverlayRules(recipeId, holder)) {
+        return overlayCorner(recipeId, holder, null);
+    }
+
+    public static Corner overlayCorner(
+            @Nullable Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
+        for (StageRecipeRule rule : activeOverlayRules(recipeId, holder, recipeView)) {
             return toCorner(StageRecipeHandler.overlayCorner(rule));
         }
         return Corner.TOP_RIGHT;
@@ -189,7 +208,19 @@ public final class StageRecipeRvHelper {
         if (recipe instanceof RecipeHolder<?> holder) {
             return holder;
         }
-        // 26.1 client has no full RecipeManager byKey; JEI wrappers rely on idOf + recipes[] matchers.
+        if (recipeId == null) {
+            return null;
+        }
+        // Integrated server (SP/dev): resolve RecipeHolder so recipe_types / RecipeIoProbe work for wrappers.
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getSingleplayerServer() != null) {
+                ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, recipeId);
+                return mc.getSingleplayerServer().getRecipeManager().byKey(key).orElse(null);
+            }
+        } catch (RuntimeException ignored) {
+            // dedicated client / early init
+        }
         return null;
     }
 }

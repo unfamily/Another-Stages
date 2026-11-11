@@ -38,14 +38,14 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             double mouseY) {
         Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
-        if (StageRecipeRvHelper.modeFor(recipeId, holder) != StageRecipeRvHelper.Mode.OVERLAY) {
+        if (StageRecipeRvHelper.modeFor(recipeId, holder, recipe) != StageRecipeRvHelper.Mode.OVERLAY) {
             return;
         }
         int width = Math.max(BADGE_SIZE, recipeCategory.getWidth());
         int height = Math.max(BADGE_SIZE, recipeCategory.getHeight());
         guiGraphics.fill(0, 0, width, height, StageRecipeRvHelper.OVERLAY_TINT);
 
-        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder);
+        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder, recipe);
         int[] box = StageRecipeRvHelper.lockBox(width, height, BADGE_SIZE, PAD, corner);
         RenderPipeline pipeline = RenderPipelines.GUI_TEXTURED;
         Identifier texture = StageRecipeRvHelper.lockTexture();
@@ -65,7 +65,7 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
             double mouseY) {
         Identifier recipeId = StageRecipeRvHelper.idOf(recipe, recipeCategory);
         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, recipeId);
-        List<StageRecipeRule> overlayRules = StageRecipeRvHelper.activeOverlayRules(recipeId, holder);
+        List<StageRecipeRule> overlayRules = StageRecipeRvHelper.activeOverlayRules(recipeId, holder, recipe);
         if (overlayRules.isEmpty()) {
             return;
         }
@@ -80,7 +80,7 @@ public final class StageRecipeLockDecorator<T> implements IRecipeCategoryDecorat
 
         int width = Math.max(BADGE_SIZE, recipeCategory.getWidth());
         int height = Math.max(BADGE_SIZE, recipeCategory.getHeight());
-        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder);
+        StageRecipeRvHelper.Corner corner = StageRecipeRvHelper.overlayCorner(recipeId, holder, recipe);
         int[] box = StageRecipeRvHelper.lockBox(width, height, BADGE_SIZE, PAD, corner);
         boolean overLock = mouseX >= box[0] && mouseX < box[0] + BADGE_SIZE
                 && mouseY >= box[1] && mouseY < box[1] + BADGE_SIZE;

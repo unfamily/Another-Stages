@@ -195,10 +195,10 @@ dependencies {
                     '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.0.0-neoforge-26.1.2.jar',
             ]),
             pickFirstExisting([
+                    '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.2.1.jar',
+                    '../Replication-AE2-Bridge/build/libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge/build/libs/rep_ae2_bridge-3.2.0.2.1.jar',
-                    // '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.0.1-neoforge-26.1.2.jar',
-                    // '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.0.0-neoforge-26.1.2.jar',
             ]),
     ]
     optionalLocal.findAll { it != null }.each { jar ->
@@ -251,6 +251,14 @@ dependencies {
     // Jade — stage_block / stage_item tooltip disguise
     compileOnly "curse.maven:jade-324717:${jade_file_id}"
     localRuntime "curse.maven:jade-324717:${jade_file_id}"
+
+    // Trash Cans — void items/fluids/energy (GUI stage testing)
+    localRuntime "curse.maven:supermartijn642s-config-lib-438332:${supermartijn_config_file_id}"
+    localRuntime "curse.maven:supermartijn642s-core-lib-454372:${supermartijn_core_file_id}"
+    localRuntime "curse.maven:trash-cans-394535:${trashcans_file_id}"
+
+    // Another Dynamics — CurseForge 1.3.0.0.0 NeoForge 26.1.2
+    localRuntime "curse.maven:another-dynamics-1516940:${another_dynamics_file_id}"
 
     // KubeJS — compile API from Latvian Maven; CurseMaven runtimes (Rhino + BAT required)
     compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"

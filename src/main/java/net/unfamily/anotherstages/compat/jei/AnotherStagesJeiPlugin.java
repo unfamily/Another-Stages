@@ -194,7 +194,7 @@ public final class AnotherStagesJeiPlugin implements IModPlugin {
                     .forEach(recipe -> {
                         Identifier id = StageRecipeRvHelper.idOf(recipe, category);
                         RecipeHolder<?> holder = StageRecipeRvHelper.asHolder(recipe, id);
-                        if (StageRecipeRvHelper.modeFor(id, holder) == StageRecipeRvHelper.Mode.HIDE) {
+                        if (StageRecipeRvHelper.modeFor(id, holder, recipe) == StageRecipeRvHelper.Mode.HIDE) {
                             shouldHide.computeIfAbsent(type, t -> new HashSet<>()).add(recipe);
                         }
                     });
