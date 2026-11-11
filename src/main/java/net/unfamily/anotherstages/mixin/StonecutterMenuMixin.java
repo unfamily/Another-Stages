@@ -42,8 +42,8 @@ public abstract class StonecutterMenuMixin {
         this.anotherStages$player = inv.player;
     }
 
-    @Inject(method = "setupResultSlot", at = @At("TAIL"), remap = false)
-    private void anotherStages$gateResult(int index, CallbackInfo ci) {
+    @Inject(method = "setupResultSlot()V", at = @At("TAIL"), remap = false)
+    private void anotherStages$gateResult(CallbackInfo ci) {
         if (!AsConfig.mixinStonecutter()) {
             return;
         }

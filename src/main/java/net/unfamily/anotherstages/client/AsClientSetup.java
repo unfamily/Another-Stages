@@ -1,14 +1,11 @@
 package net.unfamily.anotherstages.client;
 
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.gui.stagegen.StageGeneratorScreen;
 import net.unfamily.anotherstages.menu.AsMenus;
 
-@EventBusSubscriber(modid = AnotherStages.MOD_ID, value = Dist.CLIENT)
+/** Client menu screens; registered explicitly on the mod bus (no empty EventBusSubscriber). */
 public final class AsClientSetup {
     private AsClientSetup() {}
 
