@@ -977,9 +977,11 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 () -> draft.camouflage, v -> draft.camouflage = v);
         addFormToggle(formColX(1, 2), 72, formColW(1, 2), "screen.another_stages.stage_generator.field.unbreakable",
                 () -> draft.unbreakable, v -> draft.unbreakable = v);
-        addFormToggle(formColX(0, 2), 92, formColW(0, 2), "screen.another_stages.stage_generator.field.stop_tick",
+        addFormToggle(formColX(0, 2), 92, formColW(0, 2), "screen.another_stages.stage_generator.field.mimic_mining",
+                () -> draft.mimicMining, v -> draft.mimicMining = v);
+        addFormToggle(formColX(1, 2), 92, formColW(1, 2), "screen.another_stages.stage_generator.field.stop_tick",
                 () -> draft.stopTick, v -> draft.stopTick = v);
-        addFormToggle(formColX(1, 2), 92, formColW(1, 2), "screen.another_stages.stage_generator.field.break_msg",
+        addFormToggle(formColX(0, 2), 112, formColW(0, 2), "screen.another_stages.stage_generator.field.break_msg",
                 () -> draft.breakMessageDefault, v -> draft.breakMessageDefault = v);
     }
 

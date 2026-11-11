@@ -1,5 +1,6 @@
 package net.unfamily.anotherstages.datapack;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -7,11 +8,13 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.block.StageBlockBootstrap;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.gui.StageGuiBootstrap;
 import net.unfamily.anotherstages.item.StageItemBootstrap;
+import net.unfamily.anotherstages.kubejs.KubejsStageSoftReload;
 import net.unfamily.anotherstages.recipe.StageRecipeBootstrap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,11 @@ public final class StageDatapackReloadHooks {
 
             @Override
             protected void apply(Object prepared, ResourceManager resourceManager, ProfilerFiller profiler) {
+                // Soft-reload Kube first so script rules commit before datapack merge (cold /reload).
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server != null) {
+                    KubejsStageSoftReload.softReloadServerScripts(server);
+                }
                 reloadAll(resourceManager, "datapack reload");
             }
         });
@@ -43,7 +51,10 @@ public final class StageDatapackReloadHooks {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
-        reloadAll(event.getServer().getResourceManager(), "server started");
+        MinecraftServer server = event.getServer();
+        // Ensure smoke/server_scripts commit even if listener order beat Kube on first join.
+        KubejsStageSoftReload.softReloadServerScripts(server);
+        reloadAll(server.getResourceManager(), "server started");
     }
 
     private static void reloadAll(ResourceManager rm, String reason) {

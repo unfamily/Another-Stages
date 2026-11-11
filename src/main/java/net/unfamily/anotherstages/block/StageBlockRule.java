@@ -26,6 +26,11 @@ public final class StageBlockRule {
     public boolean camouflage = true;
     public boolean unbreakable = false;
     /**
+     * When true (default) and the rule is active (and not {@link #unbreakable}): break speed and
+     * harvest/tool checks use {@link #mimic} instead of the real block.
+     */
+    public boolean mimicMining = true;
+    /**
      * DANGEROUS / best-effort: when true and the rule is active, skip BlockEntity ticks,
      * scheduled block/fluid ticks, and random ticks at this position.
      * Default false. Prefer {@code stage_type: world}; player/team with no subject are fail-close.

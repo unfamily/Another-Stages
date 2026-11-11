@@ -32,11 +32,19 @@ public final class KubejsStageSoftReload {
      * @return true if KubeJS server scripts were reloaded
      */
     public static boolean softReloadServerScripts(CommandSourceStack source) {
-        if (!ModList.get().isLoaded("kubejs")) {
+        if (source == null) {
             return false;
         }
-        MinecraftServer server = source.getServer();
-        if (server == null) {
+        return softReloadServerScripts(source.getServer());
+    }
+
+    /**
+     * Soft-reload KubeJS server scripts on an integrated/dedicated server (cold start /reload).
+     *
+     * @return true if KubeJS server scripts were reloaded
+     */
+    public static boolean softReloadServerScripts(@org.jetbrains.annotations.Nullable MinecraftServer server) {
+        if (!ModList.get().isLoaded("kubejs") || server == null) {
             return false;
         }
         try {

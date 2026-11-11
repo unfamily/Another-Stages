@@ -1,5 +1,6 @@
 package net.unfamily.anotherstages.recipe;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
@@ -10,6 +11,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SingleItemRecipe;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
+import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,16 +20,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kube-like I/O probe for stage matchers on NeoForge 1.21.1 (no Recipe#display / PlacementInfo).
+ * Kube-like I/O probe for stage matchers on NeoForge 1.21.1.
+ * Result lookup uses {@link Recipe#getResultItem(HolderLookup.Provider)} (not RegistryAccess).
  */
 public final class RecipeIoProbe {
     private RecipeIoProbe() {}
 
     public static boolean outputsMatch(Recipe<?> recipe, List<String> outputs) {
+        return outputsMatch(recipe, outputs, null);
+    }
+
+    public static boolean outputsMatch(Recipe<?> recipe, List<String> outputs, @Nullable Level level) {
         if (outputs == null || outputs.isEmpty()) {
             return true;
         }
-        for (Item item : collectOutputItems(recipe)) {
+        for (Item item : collectOutputItems(recipe, lookup(level))) {
             if (StageIdMatchers.matchesItem(item, outputs)) {
                 return true;
             }
@@ -52,14 +59,28 @@ public final class RecipeIoProbe {
         return false;
     }
 
-    private static List<Item> collectOutputItems(Recipe<?> recipe) {
-        List<Item> out = new ArrayList<>();
-        ItemStack result = reflectResult(recipe);
-        if (result != null && !result.isEmpty()) {
-            out.add(result.getItem());
-            return out;
+    private static HolderLookup.Provider lookup(@Nullable Level level) {
+        if (level != null) {
+            return level.registryAccess();
         }
-        // Last resort: registry id from recipe class name is useless; keep empty.
+        return net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+    }
+
+    private static List<Item> collectOutputItems(Recipe<?> recipe, HolderLookup.Provider registries) {
+        List<Item> out = new ArrayList<>();
+        try {
+            ItemStack result = recipe.getResultItem(registries);
+            if (result != null && !result.isEmpty()) {
+                out.add(result.getItem());
+                return out;
+            }
+        } catch (RuntimeException ignored) {
+            // fall through to reflection
+        }
+        ItemStack reflected = reflectResult(recipe, registries);
+        if (reflected != null && !reflected.isEmpty()) {
+            out.add(reflected.getItem());
+        }
         return out;
     }
 
@@ -73,7 +94,10 @@ public final class RecipeIoProbe {
             return out;
         }
         if (recipe instanceof AbstractCookingRecipe cooking) {
-            out.add(cooking.getIngredients().get(0));
+            NonNullList<Ingredient> ingredients = cooking.getIngredients();
+            if (ingredients != null && !ingredients.isEmpty()) {
+                out.add(ingredients.get(0));
+            }
             return out;
         }
         if (recipe instanceof StonecutterRecipe || recipe instanceof SingleItemRecipe) {
@@ -93,18 +117,17 @@ public final class RecipeIoProbe {
     }
 
     @Nullable
-    private static ItemStack reflectResult(Recipe<?> recipe) {
-        // Prefer getResultItem(RegistryAccess) when present.
+    private static ItemStack reflectResult(Recipe<?> recipe, HolderLookup.Provider registries) {
         try {
-            Method method = recipe.getClass().getMethod("getResultItem", net.minecraft.core.RegistryAccess.class);
-            Object value = method.invoke(recipe, net.minecraft.core.RegistryAccess.EMPTY);
+            Method method = recipe.getClass().getMethod("getResultItem", HolderLookup.Provider.class);
+            Object value = method.invoke(recipe, registries);
             if (value instanceof ItemStack stack) {
                 return stack;
             }
         } catch (ReflectiveOperationException ignored) {
             // try next
         }
-        for (String name : new String[]{"getResultItem", "getResult", "resultStack", "output", "assemble"}) {
+        for (String name : new String[]{"getResultItem", "getResult", "resultStack", "output"}) {
             try {
                 Method method = recipe.getClass().getMethod(name);
                 Object value = method.invoke(recipe);
@@ -114,16 +137,6 @@ public final class RecipeIoProbe {
             } catch (ReflectiveOperationException ignored) {
                 // try next
             }
-        }
-        // CraftingRecipe / cooking often need RegistryAccess — try BuiltInRegistries wrapper via server later.
-        try {
-            Method method = Recipe.class.getMethod("getResultItem", net.minecraft.core.RegistryAccess.class);
-            Object value = method.invoke(recipe, BuiltInRegistries.REGISTRY);
-            if (value instanceof ItemStack stack) {
-                return stack;
-            }
-        } catch (ReflectiveOperationException | ClassCastException ignored) {
-            // ignore
         }
         return null;
     }

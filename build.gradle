@@ -144,10 +144,13 @@ dependencies {
                     '../iskandert_utilities/build/libs/iska_utils-3.13.0.1.0.jar',
             ]),
             pickFirstExisting([
+                    'libs/colossal_reactors-2.6.0.1.1.jar',
+                    'libs/colossal_reactors-2.6.0.1.0.jar',
                     '../Colossal-Reactors/build/libs/colossal_reactors-2.6.0.1.1.jar',
                     '../Colossal-Reactors/build/libs/colossal_reactors-2.6.0.1.0.jar',
             ]),
             pickFirstExisting([
+                    'libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge/build/libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge/build/libs/rep_ae2_bridge-3.2.0.2.1.jar',
             ]),
@@ -178,6 +181,9 @@ dependencies {
 
     if (itemListMod == 'jei') {
         localRuntime "curse.maven:jei-238222:${jei_file_id}"
+        // AE2 19.2.x dropped built-in JEI categories (Inscriber etc.); restore via companion mod
+        localRuntime "curse.maven:mezzconfig-1689768:${mezzconfig_file_id}"
+        localRuntime "curse.maven:ae2-jei-integration-1074338:${ae2_jei_integration_file_id}"
     } else if (itemListMod == 'rei') {
         localRuntime "curse.maven:roughly-enough-items-310111:${rei_curse_file}"
         localRuntime "curse.maven:architectury-api-419699:${architectury_curse_file}"
@@ -198,6 +204,12 @@ dependencies {
     // Jade
     compileOnly "curse.maven:jade-324717:${jade_file_id}"
     localRuntime "curse.maven:jade-324717:${jade_file_id}"
+
+    // Mekanism core (creative cubes / chemical machines for recipe-lock smoke)
+    if (project.hasProperty('runtime_mekanism') && project.runtime_mekanism.toString() == 'true') {
+        compileOnly "curse.maven:mekanism-268560:${mekanism_file_id}"
+        localRuntime "curse.maven:mekanism-268560:${mekanism_file_id}"
+    }
 
     // KubeJS (CurseMaven; API may also resolve from Latvian)
     compileOnly "curse.maven:kubejs-238086:${kubejs_file_id}"

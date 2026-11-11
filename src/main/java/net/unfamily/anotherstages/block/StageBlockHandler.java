@@ -173,6 +173,8 @@ public final class StageBlockHandler {
         // Omitted → true (visual camouflage on). Explicit false = loot-only.
         rule.camouflage = !obj.has("camouflage") || obj.get("camouflage").getAsBoolean();
         rule.unbreakable = obj.has("unbreakable") && obj.get("unbreakable").getAsBoolean();
+        // Omitted → true (mine as mimic). Explicit false = keep real break speed / harvest.
+        rule.mimicMining = !obj.has("mimic_mining") || obj.get("mimic_mining").getAsBoolean();
         // DANGEROUS opt-in: omit / false = no tick freeze
         rule.stopTick = obj.has("stop_tick") && obj.get("stop_tick").getAsBoolean();
         // Omitted / blank → silent; packdevs opt in with lang key or .breakMessage(true).

@@ -408,7 +408,7 @@ public final class StageRecipeHandler {
             if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
                 continue;
             }
-            if (!matchersPass(rule, holder, recipeIdStr, null)) {
+            if (!matchersPass(rule, holder, recipeIdStr, null, level)) {
                 continue;
             }
             if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {
@@ -427,6 +427,15 @@ public final class StageRecipeHandler {
             @Nullable RecipeHolder<?> holder,
             String recipeIdStr,
             @Nullable Object recipeView) {
+        return matchersPass(rule, holder, recipeIdStr, recipeView, null);
+    }
+
+    private static boolean matchersPass(
+            StageRecipeRule rule,
+            @Nullable RecipeHolder<?> holder,
+            String recipeIdStr,
+            @Nullable Object recipeView,
+            @Nullable Level level) {
         boolean hasMatchers = !rule.recipes.isEmpty()
                 || !rule.recipeTypes.isEmpty()
                 || !rule.inputs.isEmpty()
@@ -435,7 +444,7 @@ public final class StageRecipeHandler {
             return true;
         }
         if (holder != null) {
-            return matchesIo(rule, holder, recipeIdStr);
+            return matchesIo(rule, holder, recipeIdStr, level);
         }
         return matchesIoWrapper(rule, recipeIdStr, recipeView);
     }
@@ -499,7 +508,8 @@ public final class StageRecipeHandler {
      * {@code outputs}, {@code inputs}). I/O uses {@link RecipeIoProbe} (display/placement first,
      * then ingredient/result probing like Kube when display is empty).
      */
-    private static boolean matchesIo(StageRecipeRule rule, RecipeHolder<?> holder, String recipeIdStr) {
+    private static boolean matchesIo(
+            StageRecipeRule rule, RecipeHolder<?> holder, String recipeIdStr, @Nullable Level level) {
         Recipe<?> recipe = holder.value();
         if (!rule.recipes.isEmpty() && !StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
             return false;
@@ -510,7 +520,7 @@ public final class StageRecipeHandler {
                 return false;
             }
         }
-        if (!rule.outputs.isEmpty() && !RecipeIoProbe.outputsMatch(recipe, rule.outputs)) {
+        if (!rule.outputs.isEmpty() && !RecipeIoProbe.outputsMatch(recipe, rule.outputs, level)) {
             return false;
         }
         if (!rule.inputs.isEmpty() && !RecipeIoProbe.inputsMatch(recipe, rule.inputs)) {

@@ -82,6 +82,7 @@ public final class JsonExporter {
         o.addProperty("mimic", d.mimic);
         o.addProperty("camouflage", d.camouflage);
         o.addProperty("unbreakable", d.unbreakable);
+        o.addProperty("mimic_mining", d.mimicMining);
         o.addProperty("stop_tick", d.stopTick);
         if (d.breakMessageDefault) {
             o.addProperty("break_message", StageBlockRule.DEFAULT_BREAK_MESSAGE);

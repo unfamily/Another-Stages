@@ -84,43 +84,43 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        public ItemRestrictBuilder rightClick() {
+        public ItemRestrictBuilder caseRightClick() {
             addOther("right_click");
             return this;
         }
 
-        public ItemRestrictBuilder leftClick() {
+        public ItemRestrictBuilder caseLeftClick() {
             addOther("left_click");
             return this;
         }
 
-        public ItemRestrictBuilder mainHand() {
+        public ItemRestrictBuilder caseMainHand() {
             addOther("main_hand");
             return this;
         }
 
-        public ItemRestrictBuilder offHand() {
+        public ItemRestrictBuilder caseOffHand() {
             addOther("off_hand");
             return this;
         }
 
         /** Adds {@code inventory} case with default {@code inventory_ticks} (30). */
-        public ItemRestrictBuilder inventory() {
-            return inventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        public ItemRestrictBuilder caseInventory() {
+            return caseInventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
         }
 
         /**
          * Adds {@code inventory} case. {@code ticks < 1} (or omitted via no-arg) uses default 30.
          */
-        public ItemRestrictBuilder inventory(int ticks) {
+        public ItemRestrictBuilder caseInventory(int ticks) {
             addOther(StageItemHandler.CASE_INVENTORY);
             rule.inventoryTicks = StageItemHandler.normalizeInventoryTicks(ticks);
             return this;
         }
 
         /**
-         * Preferred alias for listing cases (same list as {@code other_case} / other-case verbs).
-         * Merges into the existing case list without clearing.
+         * List cases (array or string). Merges into the existing case list without clearing.
+         * Same keys as JSON {@code cases} / {@code other_case}.
          */
         public ItemRestrictBuilder cases(Object cases) {
             for (String key : KubeStageMaps.stringList(cases)) {
@@ -131,31 +131,22 @@ public final class ItemRestrictionManager {
         }
 
         /**
-         * Expands to the four click/hand cases <strong>plus</strong> {@code inventory}
-         * with default inventory ticks (30). Unlike {@link #otherCaseAll()}, includes inventory.
+         * Four click/hand cases <strong>plus</strong> {@code inventory} with default ticks (30).
          */
-        public ItemRestrictBuilder casesAll() {
-            return casesAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        public ItemRestrictBuilder caseAll() {
+            return caseAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
         }
 
         /**
-         * Like {@link #casesAll()} with custom {@code inventory_ticks} ({@code ticks < 1} → 30).
+         * Like {@link #caseAll()} with custom {@code inventory_ticks} ({@code ticks < 1} → 30).
          */
-        public ItemRestrictBuilder casesAll(int ticks) {
+        public ItemRestrictBuilder caseAll(int ticks) {
             rule.otherCase.clear();
             for (String s : StageItemHandler.ALL_OTHER_CASES) {
                 rule.otherCase.add(s);
             }
             rule.otherCase.add(StageItemHandler.CASE_INVENTORY);
             rule.inventoryTicks = StageItemHandler.normalizeInventoryTicks(ticks);
-            return this;
-        }
-
-        /** Legacy: expands to the four click/hand cases only (no inventory). */
-        public ItemRestrictBuilder otherCaseAll() {
-            rule.otherCase.clear();
-            rule.otherCase.add("all");
-            StageItemHandler.expandOtherCaseAll(rule.otherCase);
             return this;
         }
 
@@ -191,28 +182,42 @@ public final class ItemRestrictionManager {
             }
         }
 
-        public ItemRestrictBuilder drop() {
+        public ItemRestrictBuilder consequenceDrop() {
             rule.consequence = "drop";
             return this;
         }
 
-        public ItemRestrictBuilder delete() {
+        public ItemRestrictBuilder consequenceDelete() {
             rule.consequence = "delete";
             return this;
         }
 
-        public ItemRestrictBuilder block() {
+        public ItemRestrictBuilder consequenceBlock() {
             rule.consequence = "block";
             return this;
         }
 
-        public ItemRestrictBuilder blockDrop() {
+        public ItemRestrictBuilder consequenceBlockDrop() {
             rule.consequence = "block_drop";
             return this;
         }
 
-        public ItemRestrictBuilder blockDelete() {
+        public ItemRestrictBuilder consequenceBlockDelete() {
             rule.consequence = "block_delete";
+            return this;
+        }
+
+        /**
+         * Set consequence from array or string (same keys as JSON {@code consequence}).
+         * Runtime keeps one consequence; if multiple values, the last non-blank wins.
+         */
+        public ItemRestrictBuilder consequences(Object consequences) {
+            List<String> list = KubeStageMaps.stringList(consequences);
+            for (String key : list) {
+                if (key != null && !key.isBlank()) {
+                    rule.consequence = key.trim().toLowerCase(java.util.Locale.ROOT);
+                }
+            }
             return this;
         }
 
@@ -327,7 +332,7 @@ public final class ItemRestrictionManager {
 
     public static final class ItemBranchBuilder {
         private final StageItemHandler.StageItemIfRule ifRule = new StageItemHandler.StageItemIfRule();
-        /** {@code >= 1} when set by {@link #inventory(int)} / {@link #casesAll(int)}; applied to parent rule. */
+        /** {@code >= 1} when set by {@link #caseInventory(int)} / {@link #caseAll(int)}; applied to parent rule. */
         int inventoryTicksOverride = -1;
 
         public ItemBranchBuilder containersWhitelist(boolean whitelist) {
@@ -353,31 +358,31 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        public ItemBranchBuilder rightClick() {
+        public ItemBranchBuilder caseRightClick() {
             addOther("right_click");
             return this;
         }
 
-        public ItemBranchBuilder leftClick() {
+        public ItemBranchBuilder caseLeftClick() {
             addOther("left_click");
             return this;
         }
 
-        public ItemBranchBuilder mainHand() {
+        public ItemBranchBuilder caseMainHand() {
             addOther("main_hand");
             return this;
         }
 
-        public ItemBranchBuilder offHand() {
+        public ItemBranchBuilder caseOffHand() {
             addOther("off_hand");
             return this;
         }
 
-        public ItemBranchBuilder inventory() {
-            return inventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        public ItemBranchBuilder caseInventory() {
+            return caseInventory(StageItemHandler.DEFAULT_INVENTORY_TICKS);
         }
 
-        public ItemBranchBuilder inventory(int ticks) {
+        public ItemBranchBuilder caseInventory(int ticks) {
             addOther(StageItemHandler.CASE_INVENTORY);
             inventoryTicksOverride = StageItemHandler.normalizeInventoryTicks(ticks);
             return this;
@@ -390,11 +395,11 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        public ItemBranchBuilder casesAll() {
-            return casesAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
+        public ItemBranchBuilder caseAll() {
+            return caseAll(StageItemHandler.DEFAULT_INVENTORY_TICKS);
         }
 
-        public ItemBranchBuilder casesAll(int ticks) {
+        public ItemBranchBuilder caseAll(int ticks) {
             ifRule.otherCase.clear();
             for (String s : StageItemHandler.ALL_OTHER_CASES) {
                 ifRule.otherCase.add(s);
@@ -404,40 +409,44 @@ public final class ItemRestrictionManager {
             return this;
         }
 
-        public ItemBranchBuilder otherCaseAll() {
-            ifRule.otherCase.clear();
-            ifRule.otherCase.add("all");
-            return this;
-        }
-
         private void addOther(String key) {
             if (!ifRule.otherCase.contains(key)) {
                 ifRule.otherCase.add(key);
             }
         }
 
-        public ItemBranchBuilder drop() {
+        public ItemBranchBuilder consequenceDrop() {
             ifRule.consequence = "drop";
             return this;
         }
 
-        public ItemBranchBuilder delete() {
+        public ItemBranchBuilder consequenceDelete() {
             ifRule.consequence = "delete";
             return this;
         }
 
-        public ItemBranchBuilder block() {
+        public ItemBranchBuilder consequenceBlock() {
             ifRule.consequence = "block";
             return this;
         }
 
-        public ItemBranchBuilder blockDrop() {
+        public ItemBranchBuilder consequenceBlockDrop() {
             ifRule.consequence = "block_drop";
             return this;
         }
 
-        public ItemBranchBuilder blockDelete() {
+        public ItemBranchBuilder consequenceBlockDelete() {
             ifRule.consequence = "block_delete";
+            return this;
+        }
+
+        public ItemBranchBuilder consequences(Object consequences) {
+            List<String> list = KubeStageMaps.stringList(consequences);
+            for (String key : list) {
+                if (key != null && !key.isBlank()) {
+                    ifRule.consequence = key.trim().toLowerCase(java.util.Locale.ROOT);
+                }
+            }
             return this;
         }
 

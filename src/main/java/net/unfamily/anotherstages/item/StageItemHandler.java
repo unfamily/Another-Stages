@@ -74,7 +74,10 @@ public class StageItemHandler {
                     LOGGER.info("Loaded item restriction: {}", id);
                 }
             }
-            LOGGER.info("Loaded {} item restrictions", DATAPACK_ITEM_RESTRICTIONS.size());
+            LOGGER.info(
+                    "Loaded {} item restrictions ({} script)",
+                    DATAPACK_ITEM_RESTRICTIONS.size() + SCRIPT_ITEM_RESTRICTIONS.size(),
+                    SCRIPT_ITEM_RESTRICTIONS.size());
         } catch (Exception e) {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
@@ -167,7 +170,10 @@ public class StageItemHandler {
                     }
                 });
                 
-            LOGGER.info("Loaded {} item restrictions", DATAPACK_ITEM_RESTRICTIONS.size());
+            LOGGER.info(
+                    "Loaded {} item restrictions ({} script)",
+                    DATAPACK_ITEM_RESTRICTIONS.size() + SCRIPT_ITEM_RESTRICTIONS.size(),
+                    SCRIPT_ITEM_RESTRICTIONS.size());
         } catch (IOException e) {
             LOGGER.error("Error loading item restrictions: {}", e.getMessage());
         }
@@ -617,83 +623,37 @@ public class StageItemHandler {
     }
     
     /**
-     * Checks if an item should be blocked for right-click usage
-     * @return true if the item should be blocked, false otherwise
+     * True when an active rule lists {@code otherCaseType} for this stack (client + server).
+     * No side effects — callers cancel interactions and may show a server-only message.
      */
+    public static boolean isOtherCaseGated(Player player, Level level, ItemStack itemStack, String otherCaseType) {
+        return getOtherCaseConsequence(player, level, itemStack, otherCaseType) != null;
+    }
+
+    /** Right-click / use gated by {@code cases: right_click}. Client + server safe. */
     public static boolean shouldBlockRightClick(Player player, ItemStack itemStack) {
-        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+        if (player == null || itemStack == null || itemStack.isEmpty()) {
             return false;
         }
-        
-        ServerPlayer serverPlayer = (ServerPlayer) player;
-        Level level = player.level();
-        
-        boolean shouldBlock = checkOtherCaseRestriction(serverPlayer, level, itemStack, "right_click");
-        
-        // If we should block, provide visual feedback to the player
-        if (shouldBlock) {
-            // Display a message to the player
-            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                "message.iska_utils.item_restriction.blocked"), true);
-                
-            // Invia un pacchetto al client per bloccare l'interazione
-            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket(
-                serverPlayer.blockPosition(), level.getBlockState(serverPlayer.blockPosition())));
-                
-            // Aggiorna lo stato dell'inventario per evitare desync
-            serverPlayer.inventoryMenu.broadcastChanges();
-        }
-        
-        return shouldBlock;
+        return isOtherCaseGated(player, player.level(), itemStack, "right_click");
     }
-    
-    /**
-     * Checks if an item should be blocked for left-click usage
-     * @return true if the item should be blocked, false otherwise
-     */
+
+    /** Left-click / attack gated by {@code cases: left_click}. Client + server safe. */
     public static boolean shouldBlockLeftClick(Player player, ItemStack itemStack) {
-        if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
+        if (player == null || itemStack == null || itemStack.isEmpty()) {
             return false;
         }
-        
-        ServerPlayer serverPlayer = (ServerPlayer) player;
-        Level level = player.level();
-        
-        boolean shouldBlock = checkOtherCaseRestriction(serverPlayer, level, itemStack, "left_click");
-        
-        // If we should block, ensure the item attack damage is set to 0
-        if (shouldBlock) {
-            // Display a message to the player
-            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                "message.iska_utils.item_restriction.blocked"), true);
-                
-            // Set attack damage to 0 to prevent damage
-            // This is a temporary effect for this specific interaction
-            serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
-                .setBaseValue(0);
-            
-            // Invia un pacchetto al client per sincronizzare lo stato
-            serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket(
-                serverPlayer.getId(), serverPlayer.getEntityData().getNonDefaultValues()));
-                
-            // Aggiorna lo stato dell'inventario per evitare desync
-            serverPlayer.inventoryMenu.broadcastChanges();
-            
-            // Schedule task to reset damage after this tick
-            serverPlayer.level().getServer().execute(() -> {
-                // Reset attack damage to default (1.0)
-                serverPlayer.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
-                    .setBaseValue(1.0);
-                    
-                // Risincronizzo con il client dopo il reset
-                serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket(
-                    serverPlayer.getId(), serverPlayer.getEntityData().getNonDefaultValues()));
-            });
-        }
-        
-        return shouldBlock;
+        return isOtherCaseGated(player, player.level(), itemStack, "left_click");
     }
-    
+
+    /** Server-only action-bar when a click/use was blocked. */
+    public static void notifyClickBlocked(Player player) {
+        if (player instanceof ServerPlayer serverPlayer && !serverPlayer.level().isClientSide()) {
+            serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.iska_utils.item_restriction.blocked"), true);
+        }
+    }
+
     /**
      * Checks if an item should be restricted in main hand
      * @return the consequence to apply, or null if no restriction
@@ -702,13 +662,9 @@ public class StageItemHandler {
         if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
             return null;
         }
-        
-        ServerPlayer serverPlayer = (ServerPlayer) player;
-        Level level = player.level();
-        
-        return getOtherCaseConsequence(serverPlayer, level, itemStack, "main_hand");
+        return getOtherCaseConsequence(player, player.level(), itemStack, "main_hand");
     }
-    
+
     /**
      * Checks if an item should be restricted in off hand
      * @return the consequence to apply, or null if no restriction
@@ -717,65 +673,45 @@ public class StageItemHandler {
         if (!(player instanceof ServerPlayer) || player.level().isClientSide() || itemStack.isEmpty()) {
             return null;
         }
-        
-        ServerPlayer serverPlayer = (ServerPlayer) player;
-        Level level = player.level();
-        
-        return getOtherCaseConsequence(serverPlayer, level, itemStack, "off_hand");
+        return getOtherCaseConsequence(player, player.level(), itemStack, "off_hand");
     }
-    
+
     /**
-     * Checks if a specific other_case restriction applies
-     * @return true if restricted, false otherwise
-     */
-    private static boolean checkOtherCaseRestriction(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
-        String consequence = getOtherCaseConsequence(player, level, itemStack, otherCaseType);
-        return consequence != null;
-    }
-    
-    /**
-     * Gets the consequence to apply for a specific case ({@code other_case} / {@code cases}).
+     * Gets the consequence for a case ({@code cases} / {@code other_case}).
+     * Uses {@link #ruleAppliesForPlayer} so client cancel can mirror server gates (AND/OR).
+     * DEF_* {@code if[]} branches are server-only.
+     *
      * @return the consequence string or null if no restriction applies
      */
-    public static String getOtherCaseConsequence(ServerPlayer player, Level level, ItemStack itemStack, String otherCaseType) {
+    public static String getOtherCaseConsequence(Player player, Level level, ItemStack itemStack, String otherCaseType) {
+        if (player == null || level == null || itemStack == null || itemStack.isEmpty() || otherCaseType == null) {
+            return null;
+        }
         Item item = itemStack.getItem();
-        
+
         for (StageItemRestriction restriction : allRestrictions()) {
             for (StageItemRule rule : restriction.restrictions) {
-                // Check if this rule has other_case and if it includes the current type
-                if (rule.otherCase.contains(otherCaseType)) {
-                    // Check stage conditions
-                    boolean stageConditionsMet = checkStageConditions(rule, player, level);
-                    
-                    if (!stageConditionsMet) {
-                        continue;
-                    }
-                    
-                    // Check if item is affected
-                    if (isItemAffected(item, rule.items, rule.exclude)) {
-                        return rule.consequence;
-                    }
+                if (rule.otherCase.contains(otherCaseType)
+                        && ruleAppliesForPlayer(rule, player, level)
+                        && isItemAffected(item, rule.items, rule.exclude)) {
+                    return rule.consequence;
                 }
-                
-                // If using DEF_OR or DEF_AND, check if conditions
-                if (("DEF_OR".equals(rule.stagesLogic) || "DEF_AND".equals(rule.stagesLogic)) 
-                        && rule.ifConditions != null && !rule.ifConditions.isEmpty()) {
-                    
+
+                if (("DEF_OR".equals(rule.stagesLogic) || "DEF_AND".equals(rule.stagesLogic))
+                        && rule.ifConditions != null
+                        && !rule.ifConditions.isEmpty()
+                        && player instanceof ServerPlayer serverPlayer) {
                     for (StageItemIfRule ifRule : rule.ifConditions) {
-                        if (ifRule.otherCase.contains(otherCaseType)) {
-                            // Check if conditions are met
-                            if (checkIfRuleConditions(ifRule, rule, player, level)) {
-                                // Check if item is affected
-                                if (isItemAffected(item, ifRule.items, ifRule.exclude)) {
-                                    return ifRule.consequence;
-                                }
-                            }
+                        if (ifRule.otherCase.contains(otherCaseType)
+                                && checkIfRuleConditions(ifRule, rule, serverPlayer, level)
+                                && isItemAffected(item, ifRule.items, ifRule.exclude)) {
+                            return ifRule.consequence;
                         }
                     }
                 }
             }
         }
-        
+
         return null;
     }
     
@@ -933,6 +869,9 @@ public class StageItemHandler {
             return;
         }
         SCRIPT_ITEM_RESTRICTIONS.put(id, restriction);
+        if (net.unfamily.anotherstages.config.AsConfig.loggingEnabled()) {
+            LOGGER.info("Committed script item restriction: {}", id);
+        }
     }
 
     public static boolean hasRestrictionId(String id) {

@@ -19,6 +19,10 @@
   "client": [
     "BlockAppearanceMixin",
     "BlockRenderShapeMixin",
+    "LevelRendererBreakOverlayMixin",
+    "ParticleEngineCrackMixin",
+    "ClientLevelDestroyEffectMixin",
+    "ItemRendererMixin",
     "ItemStackHoverNameMixin"
   ],
   "minVersion": "0.8"
