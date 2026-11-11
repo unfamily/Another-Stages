@@ -18,13 +18,15 @@ config="${mod_id}.mixins.json"
 [[mixins]]
 config="${mod_id}.vanilla_furnace.mixins.json"
 
-# Optional Fast*/Polymorph/JEI batch mixins disabled until 1.21.1 deps are wired.
-# [[mixins]]
-# config="${mod_id}.fastbench.mixins.json"
-# [[mixins]]
-# config="${mod_id}.fastfurnace.mixins.json"
-# [[mixins]]
-# config="${mod_id}.polymorph.mixins.json"
+[[mixins]]
+config="${mod_id}.fastbench.mixins.json"
+
+[[mixins]]
+config="${mod_id}.fastfurnace.mixins.json"
+
+[[mixins]]
+config="${mod_id}.polymorph.mixins.json"
+
 # [[mixins]]
 # config="${mod_id}.jei.mixins.json"
 

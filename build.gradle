@@ -192,14 +192,14 @@ dependencies {
         localRuntime "curse.maven:${emi_mod_maven}:${emi_file_id}"
     }
 
-    // Fast* / Polymorph — optional; enable when Curse file IDs are set in gradle.properties
-    // compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
-    // localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
-    // compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
-    // localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
-    // localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
-    // compileOnly "curse.maven:polymorph-..."
-    // localRuntime "curse.maven:polymorph-..."
+    // Fast* + Placebo + Polymorph+ — localRuntime for recipe-gate testing
+    compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
+    compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
+    localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
+    localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
+    localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
+    compileOnly "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
+    localRuntime "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
 
     // Jade
     compileOnly "curse.maven:jade-324717:${jade_file_id}"
