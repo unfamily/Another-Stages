@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * {@code /another_stages call_action} — manual stage-action runs (migrated off Library).
+ * {@code /another_stages call_action} — mirror of Library; runs datapack Stage Actions only
+ * ({@code §cJSON ONLY§r} — not Kube {@code stageChanged}).
  */
 public final class CallActionCommand {
     private CallActionCommand() {}
@@ -88,20 +89,23 @@ public final class CallActionCommand {
         int executed = StageActionHooks.getListener().executeActionById(actionId, players, force);
         if (executed == -1) {
             if (!silent) {
-                source.sendFailure(Component.literal("§cUnknown action id: " + actionId));
+                source.sendFailure(Component.literal(
+                        "§cUnknown action id: " + actionId + " §7(§cJSON ONLY§7 / §cSOLO JSON§7 — datapack stage_actions)"));
             }
             return 0;
         }
         if (executed == 0 && !force) {
             if (!silent) {
                 source.sendFailure(Component.literal(
-                        "§cAction '" + actionId + "' has onCall=false. Use force=true to bypass."));
+                        "§cAction '" + actionId + "' has onCall=false. Use force=true to bypass. §7(§cJSON ONLY§7)"));
             }
             return 0;
         }
         if (!silent && !hide) {
             source.sendSuccess(
-                    () -> Component.literal("§aExecuted action §e" + actionId + " §afor §f" + executed + " §aplayer(s)"),
+                    () -> Component.literal(
+                            "§aExecuted §cJSON ONLY§a / §cSOLO JSON§a action §e" + actionId
+                                    + " §afor §f" + executed + " §aplayer(s)"),
                     false);
         }
         return executed;

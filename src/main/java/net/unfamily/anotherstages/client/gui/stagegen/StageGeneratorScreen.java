@@ -21,6 +21,7 @@ import net.unfamily.anotherstages.client.gui.AsToggle;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.menu.StageGeneratorMenu;
 import net.unfamily.anotherstages.network.DeleteStageGeneratorPayload;
+import net.unfamily.anotherstages.network.SaveKnownStagesPayload;
 import net.unfamily.anotherstages.network.SaveStageGeneratorPayload;
 import net.unfamily.anotherstages.stagegen.StageGenCompletion;
 import net.unfamily.anotherstages.stagegen.StageGenPaths;
@@ -60,7 +61,9 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         EXCLUDE_RECIPES,
         MENUS,
         MENU_TYPES,
-        STRING_ENTRY
+        STRING_ENTRY,
+        KNOWN_STAGES,
+        KNOWN_STAGE_ENTRY
     }
 
     private record AreaButton(String labelKey, RestrictionDraft.Category category) {}
@@ -86,6 +89,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     private final List<String> matcherVariants = new ArrayList<>();
     private int matcherVariantIndex = 0;
     private int editingStageIndex = -1;
+    private int editingKnownIndex = -1;
     /** Parent list when on STRING_ENTRY (tooltips / recipes / menus / slots / …). */
     private SubView stringListParent = SubView.TOOLTIPS;
     private int editingStringIndex = -1;
@@ -186,6 +190,8 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             case STAGES -> buildStageList();
             case TOOLTIPS, BLOCKED_SLOTS, RECIPES, RECIPE_TYPES, EXCLUDE_RECIPES, MENUS, MENU_TYPES ->
                     buildStringList();
+            case KNOWN_STAGES -> buildKnownStagesList();
+            case KNOWN_STAGE_ENTRY -> buildKnownStageEntry();
             default -> {
                 subView = SubView.ENTRY_EDIT;
                 rebuild();
@@ -464,6 +470,13 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 rebuild();
             });
         }
+        list.addActionButton(
+                Component.translatable("screen.another_stages.stage_generator.home.known_stages"),
+                () -> {
+                    subView = SubView.KNOWN_STAGES;
+                    savedScroll = 0;
+                    rebuild();
+                });
         addBottomButton(doneLabel(), this::openCloseHint);
     }
 
@@ -507,6 +520,19 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     /** One layer up (ESC / Done hierarchy). Autosaves Ready drafts when leaving ENTRY_EDIT. */
     private void navigateUp() {
         switch (subView) {
+            case KNOWN_STAGE_ENTRY -> {
+                autosaveKnownStages();
+                editingKnownIndex = -1;
+                subView = SubView.KNOWN_STAGES;
+                savedScroll = 0;
+                rebuild();
+            }
+            case KNOWN_STAGES -> {
+                autosaveKnownStages();
+                subView = SubView.HOME;
+                savedScroll = 0;
+                rebuild();
+            }
             case BROWSE -> {
                 subView = SubView.HOME;
                 savedScroll = 0;
@@ -590,6 +616,116 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
             draft.kubeEntryIndex = max + 1;
         }
         ClientPacketDistributor.sendToServer(new SaveStageGeneratorPayload(draft.toJson().toString()));
+    }
+
+    /** Silent rewrite of known-stages catalog (all ready rows). */
+    private void autosaveKnownStages() {
+        if (editingKnownIndex >= 0 && editingKnownIndex < session().knownStages().size() && stageIdBox != null) {
+            KnownStageDraft cur = session().knownStages().get(editingKnownIndex);
+            cur.stage = stageIdBox.getValue() == null ? "" : stageIdBox.getValue().trim();
+        }
+        if (!AsConfig.preferKubejs()) {
+            String first = StageGenClientPaths.firstDatapackPath();
+            if (first.isBlank() || "(empty)".equals(first)) {
+                return;
+            }
+        }
+        List<String> blobs = new ArrayList<>();
+        for (KnownStageDraft d : session().knownStages()) {
+            if (d != null && d.isReady()) {
+                blobs.add(d.toJson().toString());
+            }
+        }
+        ClientPacketDistributor.sendToServer(new SaveKnownStagesPayload(blobs));
+    }
+
+    private void buildKnownStagesList() {
+        StageGenScrollList list = createList(topPos + 8, contentBottom());
+        list.addLabel("screen.another_stages.stage_generator.known.title");
+        list.addWrappedLabel("screen.another_stages.stage_generator.known.hint");
+        List<KnownStageDraft> rows = session().knownStages();
+        if (rows.isEmpty()) {
+            list.addLabel("screen.another_stages.stage_generator.known.empty");
+        } else {
+            for (int i = 0; i < rows.size(); i++) {
+                KnownStageDraft d = rows.get(i);
+                int index = i;
+                boolean ready = d.isReady();
+                String reason = d.incompleteReasonKey();
+                list.addBrowseRow(
+                        ItemStack.EMPTY,
+                        "§",
+                        Component.literal(d.summary()),
+                        reason == null
+                                ? Component.translatable("screen.another_stages.stage_generator.complete.ready")
+                                : Component.translatable(reason),
+                        ready,
+                        () -> openKnownStageEntry(index));
+            }
+        }
+        addBottomButton(Component.translatable("screen.another_stages.stage_generator.side.new"), () -> {
+            KnownStageDraft created = session().createKnown();
+            openKnownStageEntry(session().knownStages().indexOf(created));
+        });
+        addBottomButton(Component.translatable("screen.another_stages.stage_generator.side.delete"), () -> {
+            if (session().knownSelected() == null) {
+                return;
+            }
+            session().removeKnownSelected();
+            autosaveKnownStages();
+            rebuild();
+        }, null, () -> session().knownSelected() != null);
+        addBottomButton(doneLabel(), this::navigateUp);
+    }
+
+    private void openKnownStageEntry(int index) {
+        if (index < 0 || index >= session().knownStages().size()) {
+            return;
+        }
+        session().selectKnownIndex(index);
+        editingKnownIndex = index;
+        subView = SubView.KNOWN_STAGE_ENTRY;
+        savedScroll = 0;
+        rebuild();
+    }
+
+    private void buildKnownStageEntry() {
+        if (editingKnownIndex < 0 || editingKnownIndex >= session().knownStages().size()) {
+            subView = SubView.KNOWN_STAGES;
+            rebuild();
+            return;
+        }
+        KnownStageDraft row = session().knownStages().get(editingKnownIndex);
+        session().selectKnownIndex(editingKnownIndex);
+
+        addFormLabel(FORM_LEFT, 8, FORM_WIDTH, "screen.another_stages.stage_generator.known.entry_title");
+        String incomplete = row.incompleteReasonKey();
+        if (incomplete != null) {
+            addFormLabel(FORM_LEFT, 20, FORM_WIDTH, incomplete);
+        }
+        addFormLabel(FORM_LEFT, 36, FORM_WIDTH, "screen.another_stages.stage_generator.table.col.type");
+        addFormCycle(FORM_LEFT, 48, FORM_WIDTH, 14, Component.literal(row.stageType), delta -> {
+            row.stageType = stepStageType(row.stageType, delta);
+            rebuild();
+        });
+
+        addFormLabel(FORM_LEFT, 70, FORM_WIDTH, "screen.another_stages.stage_generator.stages.id_hint");
+        stageIdBox = new SuggestingEditBox(
+                font,
+                leftPos + FORM_LEFT,
+                topPos + 82,
+                FORM_WIDTH,
+                14,
+                Component.translatable("screen.another_stages.stage_generator.table.col.id"),
+                StageGenSuggestions::stageIds);
+        stageIdBox.setMaxLength(128);
+        stageIdBox.setValue(row.stage == null ? "" : row.stage);
+        stageIdBox.setResponder(v -> row.stage = v == null ? "" : v.trim());
+        stageIdBox.refreshSuggestions();
+        addRenderableWidget(stageIdBox);
+        formBoxes.add(stageIdBox);
+
+        addBottomButton(doneLabel(), this::navigateUp);
     }
 
     /** Browse row label: first matcher / recipe target / menu — never the silent JSON id. */

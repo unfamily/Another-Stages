@@ -12,7 +12,9 @@ public final class StageGenSession {
     private static final StageGenSession INSTANCE = new StageGenSession();
 
     private final List<RestrictionDraft> drafts = new ArrayList<>();
+    private final List<KnownStageDraft> knownStages = new ArrayList<>();
     private int selectedIndex = -1;
+    private int knownSelectedIndex = -1;
     private RestrictionDraft.Category filter = RestrictionDraft.Category.ITEM;
 
     private StageGenSession() {}
@@ -34,7 +36,61 @@ public final class StageGenSession {
 
     public void clear() {
         drafts.clear();
+        knownStages.clear();
         selectedIndex = -1;
+        knownSelectedIndex = -1;
+    }
+
+    public void replaceKnownStages(List<KnownStageDraft> loaded) {
+        knownStages.clear();
+        if (loaded != null) {
+            knownStages.addAll(loaded);
+        }
+        knownSelectedIndex = knownStages.isEmpty() ? -1 : 0;
+    }
+
+    public List<KnownStageDraft> knownStages() {
+        return knownStages;
+    }
+
+    public int knownSelectedIndex() {
+        return knownSelectedIndex;
+    }
+
+    @Nullable
+    public KnownStageDraft knownSelected() {
+        if (knownSelectedIndex < 0 || knownSelectedIndex >= knownStages.size()) {
+            return null;
+        }
+        return knownStages.get(knownSelectedIndex);
+    }
+
+    public void selectKnownIndex(int index) {
+        if (index < 0 || index >= knownStages.size()) {
+            knownSelectedIndex = -1;
+            return;
+        }
+        knownSelectedIndex = index;
+    }
+
+    public KnownStageDraft createKnown() {
+        KnownStageDraft d = new KnownStageDraft();
+        knownStages.add(d);
+        knownSelectedIndex = knownStages.size() - 1;
+        return d;
+    }
+
+    public boolean removeKnownSelected() {
+        if (knownSelectedIndex < 0 || knownSelectedIndex >= knownStages.size()) {
+            return false;
+        }
+        knownStages.remove(knownSelectedIndex);
+        if (knownStages.isEmpty()) {
+            knownSelectedIndex = -1;
+        } else {
+            knownSelectedIndex = Math.min(knownSelectedIndex, knownStages.size() - 1);
+        }
+        return true;
     }
 
     public List<RestrictionDraft> all() {

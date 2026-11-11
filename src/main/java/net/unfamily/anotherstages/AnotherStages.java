@@ -34,6 +34,7 @@ public class AnotherStages {
         StageBlockBootstrap.install();
         StageGuiBootstrap.install();
         net.unfamily.anotherstages.kubejs.KubejsStageSoftReload.install();
+        net.unfamily.anotherstages.kubejs.KubeStageChangedBridge.install();
         net.unfamily.anotherstages.datapack.AsUtilsReloadBridge.install();
         modEventBus.addListener(net.unfamily.anotherstages.datapack.AsUtilsReloadBridge::onCommonSetup);
         if (FMLEnvironment.getDist() == Dist.CLIENT) {

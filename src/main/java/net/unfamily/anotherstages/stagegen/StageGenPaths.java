@@ -135,4 +135,47 @@ public final class StageGenPaths {
             case GUI -> "another_stages:stage_gui";
         };
     }
+
+    /** Library-style known_stages JSON under the Stage Generator datapack root. */
+    public static Path resolveKnownStagesJsonFile() {
+        String raw = firstDatapackPathConfig();
+        if (raw.isBlank()) {
+            return null;
+        }
+        Path root = gameDir().resolve(raw).normalize();
+        Path dataRoot = resolveDataRoot(root, raw);
+        return dataRoot
+                .resolve(LOAD_NS)
+                .resolve("load")
+                .resolve("stage_generator_known_stages.json");
+    }
+
+    public static Path resolveKnownStagesKubeFile() {
+        return gameDir()
+                .resolve("kubejs")
+                .resolve("server_scripts")
+                .resolve("another_stages")
+                .resolve("stage_generator_known_stages.js");
+    }
+
+    public static String displayKnownStagesJsonPath() {
+        Path abs = resolveKnownStagesJsonFile();
+        if (abs == null) {
+            return "(no bootstrap.datapack_paths)";
+        }
+        return displayRelative(abs);
+    }
+
+    public static String displayKnownStagesKubePath() {
+        return displayRelative(resolveKnownStagesKubeFile());
+    }
+
+    private static String displayRelative(Path abs) {
+        Path game = gameDir().normalize();
+        try {
+            return game.relativize(abs.normalize()).toString().replace('\\', '/');
+        } catch (IllegalArgumentException ex) {
+            return abs.toString().replace('\\', '/');
+        }
+    }
 }

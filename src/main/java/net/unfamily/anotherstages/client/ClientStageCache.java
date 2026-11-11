@@ -1,5 +1,7 @@
 package net.unfamily.anotherstages.client;
 
+import net.unfamily.anotherstages.block.StageBlockHandler;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +16,7 @@ public final class ClientStageCache {
     private static final Set<String> WORLD = new HashSet<>();
     private static final Set<String> TEAM = new HashSet<>();
     private static int revision;
+    private static boolean everApplied;
     /** Optional client hook (e.g. rebuild mimic meshes); must not pull client-only classes into common load. */
     private static Runnable onChanged = () -> {};
 
@@ -24,6 +27,12 @@ public final class ClientStageCache {
     }
 
     public static void apply(List<String> player, List<String> world, List<String> team) {
+        Set<String> changed = new HashSet<>();
+        collectSymmetricDiff(PLAYER, player, changed);
+        collectSymmetricDiff(WORLD, world, changed);
+        collectSymmetricDiff(TEAM, team, changed);
+
+        boolean firstSync = !everApplied;
         PLAYER.clear();
         WORLD.clear();
         TEAM.clear();
@@ -36,16 +45,52 @@ public final class ClientStageCache {
         if (team != null) {
             TEAM.addAll(team);
         }
+        everApplied = true;
         revision++;
-        onChanged.run();
+
+        // JEI fingerprint always updates via revision; world mesh rebuild only when camouflage stages change.
+        if (firstSync || intersectsCamouflageStages(changed)) {
+            onChanged.run();
+        }
     }
 
     public static void clear() {
         PLAYER.clear();
         WORLD.clear();
         TEAM.clear();
+        everApplied = false;
         revision++;
         onChanged.run();
+    }
+
+    private static void collectSymmetricDiff(Set<String> before, List<String> after, Set<String> out) {
+        Set<String> afterSet = after == null ? Set.of() : new HashSet<>(after);
+        for (String s : before) {
+            if (!afterSet.contains(s)) {
+                out.add(s);
+            }
+        }
+        for (String s : afterSet) {
+            if (!before.contains(s)) {
+                out.add(s);
+            }
+        }
+    }
+
+    private static boolean intersectsCamouflageStages(Set<String> changed) {
+        if (changed == null || changed.isEmpty()) {
+            return false;
+        }
+        Set<String> camouflage = StageBlockHandler.collectCamouflageReferencedStages();
+        if (camouflage.isEmpty()) {
+            return false;
+        }
+        for (String stage : changed) {
+            if (camouflage.contains(stage)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean hasPlayerStage(String stage) {

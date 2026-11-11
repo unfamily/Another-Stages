@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.unfamily.anotherstages.AnotherStages;
+import net.unfamily.anotherstages.client.gui.stagegen.KnownStageDraft;
 import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
 import net.unfamily.anotherstages.config.AsConfig;
 
@@ -26,6 +27,57 @@ public final class StageGenFileReader {
             return StageGenKubeReader.loadAllKube();
         }
         return loadAllJson();
+    }
+
+    /** Known-stages catalog for Stage Generator (JSON or Kube preference). */
+    public static List<KnownStageDraft> loadKnownStagesForOpen() {
+        if (AsConfig.preferKubejs()) {
+            return loadKnownStagesKube();
+        }
+        return loadKnownStagesJson();
+    }
+
+    public static List<KnownStageDraft> loadKnownStagesJson() {
+        List<KnownStageDraft> out = new ArrayList<>();
+        Path file = StageGenPaths.resolveKnownStagesJsonFile();
+        if (file == null || !Files.isRegularFile(file)) {
+            return out;
+        }
+        try {
+            JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+            if (!root.has("stages") || !root.get("stages").isJsonArray()) {
+                return out;
+            }
+            for (JsonElement el : root.getAsJsonArray("stages")) {
+                if (el.isJsonObject()) {
+                    out.add(KnownStageDraft.fromJsonObject(el.getAsJsonObject()));
+                }
+            }
+        } catch (Exception ex) {
+            AnotherStages.LOGGER.warn("Failed to load known stages file {}: {}", file, ex.toString());
+        }
+        return out;
+    }
+
+    public static List<KnownStageDraft> loadKnownStagesKube() {
+        List<KnownStageDraft> out = new ArrayList<>();
+        Path file = StageGenPaths.resolveKnownStagesKubeFile();
+        if (!Files.isRegularFile(file)) {
+            return out;
+        }
+        try {
+            String raw = Files.readString(file, StandardCharsets.UTF_8);
+            // AnotherStages.registerStage('player', 'bronze_age')
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(
+                    "AnotherStages\\.registerStage\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)");
+            java.util.regex.Matcher m = p.matcher(raw);
+            while (m.find()) {
+                out.add(new KnownStageDraft(m.group(1), m.group(2)));
+            }
+        } catch (Exception ex) {
+            AnotherStages.LOGGER.warn("Failed to load known stages kube file {}: {}", file, ex.toString());
+        }
+        return out;
     }
 
     public static List<RestrictionDraft> loadAllJson() {

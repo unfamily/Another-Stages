@@ -10,8 +10,11 @@ import net.unfamily.anotherstages.AnotherStages;
 import java.util.ArrayList;
 import java.util.List;
 
-/** S2C: push loaded Stage Generator drafts (JSON draft blobs) when the editor opens. */
-public record StageGenSessionSyncS2CPayload(List<String> draftJsons) implements CustomPacketPayload {
+/**
+ * S2C: push loaded Stage Generator drafts and known-stage catalog when the editor opens.
+ */
+public record StageGenSessionSyncS2CPayload(List<String> draftJsons, List<String> knownStageJsons)
+        implements CustomPacketPayload {
     public static final Type<StageGenSessionSyncS2CPayload> TYPE =
             new Type<>(Identifier.fromNamespaceAndPath(AnotherStages.MOD_ID, "stage_gen_session_sync"));
 
@@ -19,6 +22,8 @@ public record StageGenSessionSyncS2CPayload(List<String> draftJsons) implements 
             StreamCodec.composite(
                     ByteBufCodecs.collection(ArrayList::new, ByteBufCodecs.STRING_UTF8),
                     StageGenSessionSyncS2CPayload::draftJsons,
+                    ByteBufCodecs.collection(ArrayList::new, ByteBufCodecs.STRING_UTF8),
+                    StageGenSessionSyncS2CPayload::knownStageJsons,
                     StageGenSessionSyncS2CPayload::new);
 
     @Override

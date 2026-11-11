@@ -12,6 +12,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.client.ClientStageCache;
+import net.unfamily.anotherstages.client.gui.stagegen.KnownStageDraft;
 import net.unfamily.anotherstages.client.gui.stagegen.RestrictionDraft;
 import net.unfamily.anotherstages.client.gui.stagegen.StageGenClientPaths;
 import net.unfamily.anotherstages.client.gui.stagegen.StageGenSession;
@@ -70,6 +71,15 @@ public final class AsNetworking {
                     }
                 }
         );
+        registrar.playToServer(
+                SaveKnownStagesPayload.TYPE,
+                SaveKnownStagesPayload.STREAM_CODEC,
+                (payload, context) -> {
+                    if (context.player() instanceof ServerPlayer serverPlayer) {
+                        context.enqueueWork(() -> SaveKnownStagesPayload.handle(payload, serverPlayer));
+                    }
+                }
+        );
     }
 
     private static void applySessionSync(StageGenSessionSyncS2CPayload payload) {
@@ -82,6 +92,15 @@ public final class AsNetworking {
             }
         }
         StageGenSession.get().replaceAll(drafts);
+        List<KnownStageDraft> known = new ArrayList<>();
+        for (String json : payload.knownStageJsons()) {
+            try {
+                known.add(KnownStageDraft.fromJson(json));
+            } catch (Exception ex) {
+                AnotherStages.LOGGER.warn("Skipping bad known-stage sync blob: {}", ex.toString());
+            }
+        }
+        StageGenSession.get().replaceKnownStages(known);
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         if (mc.screen instanceof net.unfamily.anotherstages.client.gui.stagegen.StageGeneratorScreen screen) {
             screen.onSessionSynced();
@@ -146,7 +165,11 @@ public final class AsNetworking {
         for (RestrictionDraft draft : StageGenFileReader.loadAllForOpen()) {
             blobs.add(draft.toJson().toString());
         }
-        PacketDistributor.sendToPlayer(player, new StageGenSessionSyncS2CPayload(blobs));
+        List<String> knownBlobs = new ArrayList<>();
+        for (KnownStageDraft known : StageGenFileReader.loadKnownStagesForOpen()) {
+            knownBlobs.add(known.toJson().toString());
+        }
+        PacketDistributor.sendToPlayer(player, new StageGenSessionSyncS2CPayload(blobs, knownBlobs));
         player.openMenu(new SimpleMenuProvider(
                 (id, inv, p) -> new StageGeneratorMenu(id, inv),
                 Component.translatable("screen.another_stages.stage_generator.title")));

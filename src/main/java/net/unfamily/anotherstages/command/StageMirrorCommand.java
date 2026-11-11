@@ -43,7 +43,7 @@ public final class StageMirrorCommand {
                 .requires(src -> src.permissions().hasPermission(
                         new Permission.HasCommandLevel(PermissionLevel.byId(2))));
 
-        // Migrated off Library: only Another Stages registers call_action.
+        // Mirror of Library call_action (JSON-only Stage Actions).
         builder.then(CallActionCommand.subtree());
         builder.then(Commands.literal("wiki").executes(StageMirrorCommand::executeWiki));
 

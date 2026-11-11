@@ -7,7 +7,7 @@ import dev.latvian.mods.kubejs.script.ScriptManager;
 import dev.latvian.mods.kubejs.script.ScriptType;
 
 /**
- * Registers {@code AnotherStagesEvents} (preferred restriction registration),
+ * Registers {@code AnotherStagesEvents} (restrictions + {@code stageChanged}),
  * {@code AnotherStages} query helpers (+ legacy managers for retrocompat).
  */
 public final class AnotherStagesKubeJSPlugin implements KubeJSPlugin {

@@ -207,6 +207,25 @@ public final class StageBlockHandler {
         return collectReferencedStages(null);
     }
 
+    /**
+     * Stage ids referenced by {@code stage_block} rules with {@code camouflage == true}
+     * (default when omitted). Used to decide when client world mesh must rebuild.
+     */
+    public static Set<String> collectCamouflageReferencedStages() {
+        Set<String> stages = new HashSet<>();
+        for (StageBlockRule rule : allRules()) {
+            if (!rule.camouflage) {
+                continue;
+            }
+            for (StageCondition c : rule.stages) {
+                if (c.stage != null && !c.stage.isBlank()) {
+                    stages.add(c.stage.trim());
+                }
+            }
+        }
+        return stages;
+    }
+
     public static Set<String> collectReferencedStages(@Nullable String stageType) {
         String want = stageType == null || stageType.isBlank()
                 ? null
