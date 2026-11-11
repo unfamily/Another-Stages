@@ -238,14 +238,14 @@ dependencies {
     }
     // itemListMod == 'none' → compileOnly only
 
-    //Fast*: compileAlways. Runtime: FastFurnace ON (gate under test); FastWorkbench OFF so vanilla crafting table is tested.
+    // Fast* + Placebo + Polymorph+ — localRuntime for recipe-gate testing (crafting / furnace / conflicts).
     compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
 
-    // Polymorph+ (Aminoquiz fork) — 26.1.2 uses mod id polymorph_plus; filter stage-locked conflict candidates.
+    // Polymorph+ (Aminoquiz fork) — mod id polymorph_plus; filter stage-locked conflict candidates.
     compileOnly "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
     localRuntime "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
 
