@@ -99,6 +99,7 @@ public final class RestrictionDraft {
     public String mimic = "minecraft:stone";
     public boolean camouflage = true;
     public boolean unbreakable = false;
+    public boolean mimicMining = true;
     public boolean stopTick = false;
     public boolean breakMessageDefault = false;
     public boolean interactMessageDefault = false;
@@ -135,6 +136,7 @@ public final class RestrictionDraft {
             case RECIPE -> d.recipeViewer = "overlay";
             case BLOCK -> {
                 d.camouflage = true;
+                d.mimicMining = true;
                 d.mimic = "minecraft:stone";
             }
             case GUI -> {
@@ -243,6 +245,7 @@ public final class RestrictionDraft {
         root.addProperty("mimic", mimic);
         root.addProperty("camouflage", camouflage);
         root.addProperty("unbreakable", unbreakable);
+        root.addProperty("mimicMining", mimicMining);
         root.addProperty("stopTick", stopTick);
         root.addProperty("breakMessageDefault", breakMessageDefault);
         root.addProperty("interactMessageDefault", interactMessageDefault);
@@ -303,6 +306,7 @@ public final class RestrictionDraft {
         d.mimic = str(root, "mimic", "minecraft:stone");
         d.camouflage = bool(root, "camouflage", true);
         d.unbreakable = bool(root, "unbreakable", false);
+        d.mimicMining = bool(root, "mimicMining", true);
         d.stopTick = bool(root, "stopTick", false);
         d.breakMessageDefault = bool(root, "breakMessageDefault", false);
         d.interactMessageDefault = bool(root, "interactMessageDefault", false);

@@ -96,22 +96,22 @@ public final class KubeExporter {
             sb.append("    .exclude(").append(ExportUtil.jsStringArray(d.exclude)).append(")\n");
         }
         if (d.casesAll) {
-            sb.append("    .casesAll(").append(Math.max(1, d.inventoryTicks)).append(")\n");
+            sb.append("    .caseAll(").append(Math.max(1, d.inventoryTicks)).append(")\n");
         } else {
             if (d.caseRight) {
-                sb.append("    .rightClick()\n");
+                sb.append("    .caseRightClick()\n");
             }
             if (d.caseLeft) {
-                sb.append("    .leftClick()\n");
+                sb.append("    .caseLeftClick()\n");
             }
             if (d.caseMain) {
-                sb.append("    .mainHand()\n");
+                sb.append("    .caseMainHand()\n");
             }
             if (d.caseOff) {
-                sb.append("    .offHand()\n");
+                sb.append("    .caseOffHand()\n");
             }
             if (d.caseInventory) {
-                sb.append("    .inventory(").append(Math.max(1, d.inventoryTicks)).append(")\n");
+                sb.append("    .caseInventory(").append(Math.max(1, d.inventoryTicks)).append(")\n");
             }
         }
         sb.append("    .canPickup(").append(d.canPickup).append(")\n");
@@ -170,6 +170,9 @@ public final class KubeExporter {
         sb.append("    .mimic(").append(ExportUtil.jsString(d.mimic)).append(")\n");
         sb.append("    .camouflage(").append(d.camouflage).append(")\n");
         sb.append("    .unbreakable(").append(d.unbreakable).append(")\n");
+        if (!d.mimicMining) {
+            sb.append("    .disableMimicMining()\n");
+        }
         if (d.stopTick) {
             sb.append("    .stopTick(true)\n");
         }
@@ -220,11 +223,11 @@ public final class KubeExporter {
 
     private static String consequenceMethod(String c) {
         return switch (c == null ? "drop" : c.toLowerCase(Locale.ROOT)) {
-            case "delete" -> "delete";
-            case "block" -> "block";
-            case "block_drop" -> "blockDrop";
-            case "block_delete" -> "blockDelete";
-            default -> "drop";
+            case "delete" -> "consequenceDelete";
+            case "block" -> "consequenceBlock";
+            case "block_drop" -> "consequenceBlockDrop";
+            case "block_delete" -> "consequenceBlockDelete";
+            default -> "consequenceDrop";
         };
     }
 

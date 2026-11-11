@@ -4,6 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.TriState;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -14,6 +15,7 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -116,83 +118,143 @@ public final class StageItemEvents {
     }
     
     /**
-     * Handles right-click item interactions
+     * Handles right-click item interactions (client + server — cancel prediction).
      */
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (!initialized || event.getLevel().isClientSide()) {
+        if (!initialized) {
             return;
         }
-        
         Player player = event.getEntity();
         ItemStack itemStack = event.getItemStack();
-        
         try {
             if (StageItemHandler.shouldBlockRightClick(player, itemStack)) {
                 event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                StageItemHandler.notifyClickBlocked(player);
             }
-            
-            // Check main/off hand
-            checkAndApplyHandRestrictions(player);
+            if (!event.getLevel().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
         } catch (Exception e) {
             LOGGER.error("Error checking right-click restriction: {}", e.getMessage());
         }
     }
-    
+
     /**
-     * Handles right-click block interactions
+     * Handles right-click block interactions (client + server).
      */
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (!initialized || event.getLevel().isClientSide()) {
+        if (!initialized) {
             return;
         }
-        
         Player player = event.getEntity();
         ItemStack itemStack = event.getItemStack();
-        
         try {
             if (StageItemHandler.shouldBlockRightClick(player, itemStack)) {
                 event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                event.setUseItem(TriState.FALSE);
+                event.setUseBlock(TriState.FALSE);
+                StageItemHandler.notifyClickBlocked(player);
             }
-            
-            // Check main/off hand
-            checkAndApplyHandRestrictions(player);
+            if (!event.getLevel().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
         } catch (Exception e) {
             LOGGER.error("Error checking right-click block restriction: {}", e.getMessage());
         }
     }
-    
+
+    /** Blocks right-click on entities when the held item has {@code right_click} gated. */
+    @SubscribeEvent
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (!initialized) {
+            return;
+        }
+        Player player = event.getEntity();
+        ItemStack itemStack = event.getItemStack();
+        try {
+            if (StageItemHandler.shouldBlockRightClick(player, itemStack)) {
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                StageItemHandler.notifyClickBlocked(player);
+            }
+            if (!event.getLevel().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error checking entity interact restriction: {}", e.getMessage());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        if (!initialized) {
+            return;
+        }
+        Player player = event.getEntity();
+        ItemStack itemStack = event.getItemStack();
+        try {
+            if (StageItemHandler.shouldBlockRightClick(player, itemStack)) {
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.FAIL);
+                StageItemHandler.notifyClickBlocked(player);
+            }
+            if (!event.getLevel().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error checking entity interact-specific restriction: {}", e.getMessage());
+        }
+    }
+
+    /** Blocks eat/drink/bow start — same predicate as {@code cases: right_click}. */
+    @SubscribeEvent
+    public static void onUseItemStart(LivingEntityUseItemEvent.Start event) {
+        if (!initialized) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        ItemStack itemStack = event.getItem();
+        try {
+            if (StageItemHandler.shouldBlockRightClick(player, itemStack)) {
+                event.setCanceled(true);
+                StageItemHandler.notifyClickBlocked(player);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error checking use-item start restriction: {}", e.getMessage());
+        }
+    }
+
     /**
-     * Handles left-click block interactions
+     * Handles left-click block interactions (client + server).
      */
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        if (!initialized || event.getLevel().isClientSide()) {
+        if (!initialized) {
             return;
         }
-        
         Player player = event.getEntity();
         ItemStack itemStack = event.getItemStack();
-        
         try {
             if (StageItemHandler.shouldBlockLeftClick(player, itemStack)) {
                 event.setCanceled(true);
-                
-                // Notify the player
-                if (player instanceof ServerPlayer serverPlayer) {
-                    serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                        "message.iska_utils.item_restriction.blocked"), true);
-                }
+                event.setUseItem(TriState.FALSE);
+                event.setUseBlock(TriState.FALSE);
+                StageItemHandler.notifyClickBlocked(player);
             }
-            
-            // Check main/off hand
-            checkAndApplyHandRestrictions(player);
+            if (!event.getLevel().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
         } catch (Exception e) {
             LOGGER.error("Error checking left-click restriction: {}", e.getMessage());
         }
     }
-    
+
     /**
      * Handles equipment change events for main/off hand checking
      */
@@ -201,33 +263,31 @@ public final class StageItemEvents {
         if (!initialized || event.getEntity().level().isClientSide() || !(event.getEntity() instanceof Player)) {
             return;
         }
-        
         try {
             checkAndApplyHandRestrictions((Player) event.getEntity());
         } catch (Exception e) {
             LOGGER.error("Error checking equipment change: {}", e.getMessage());
         }
     }
-    
+
     /**
      * Handles entity attack (left-click on entity)
      */
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
-        if (!initialized || event.getEntity().level().isClientSide()) {
+        if (!initialized) {
             return;
         }
-        
         Player player = event.getEntity();
         ItemStack itemStack = player.getItemInHand(InteractionHand.MAIN_HAND);
-        
         try {
             if (StageItemHandler.shouldBlockLeftClick(player, itemStack)) {
                 event.setCanceled(true);
+                StageItemHandler.notifyClickBlocked(player);
             }
-            
-            // Check main/off hand
-            checkAndApplyHandRestrictions(player);
+            if (!player.level().isClientSide()) {
+                checkAndApplyHandRestrictions(player);
+            }
         } catch (Exception e) {
             LOGGER.error("Error checking attack entity restriction: {}", e.getMessage());
         }

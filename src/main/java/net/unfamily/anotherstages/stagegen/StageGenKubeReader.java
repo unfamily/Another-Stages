@@ -173,27 +173,31 @@ public final class StageGenKubeReader {
             }
         }
 
-        if (body.contains(".rightClick()")) {
+        if (body.contains(".caseRightClick()")) {
             d.caseRight = true;
         }
-        if (body.contains(".leftClick()")) {
+        if (body.contains(".caseLeftClick()")) {
             d.caseLeft = true;
         }
-        if (body.contains(".mainHand()")) {
+        if (body.contains(".caseMainHand()")) {
             d.caseMain = true;
         }
-        if (body.contains(".offHand()")) {
+        if (body.contains(".caseOffHand()")) {
             d.caseOff = true;
         }
-        Matcher inv = Pattern.compile("\\.inventory\\s*\\(\\s*(\\d+)\\s*\\)").matcher(body);
+        Matcher inv = Pattern.compile("\\.caseInventory\\s*\\(\\s*(\\d+)\\s*\\)").matcher(body);
         if (inv.find()) {
             d.caseInventory = true;
             d.inventoryTicks = Integer.parseInt(inv.group(1));
+        } else if (body.contains(".caseInventory()")) {
+            d.caseInventory = true;
         }
-        Matcher casesAll = Pattern.compile("\\.casesAll\\s*\\(\\s*(\\d+)\\s*\\)").matcher(body);
-        if (casesAll.find()) {
+        Matcher caseAll = Pattern.compile("\\.caseAll\\s*\\(\\s*(\\d+)\\s*\\)").matcher(body);
+        if (caseAll.find()) {
             d.casesAll = true;
-            d.inventoryTicks = Integer.parseInt(casesAll.group(1));
+            d.inventoryTicks = Integer.parseInt(caseAll.group(1));
+        } else if (body.contains(".caseAll()")) {
+            d.casesAll = true;
         }
 
         Matcher canPickup = Pattern.compile("\\.canPickup\\s*\\(\\s*(true|false)\\s*\\)").matcher(body);
@@ -204,16 +208,21 @@ public final class StageGenKubeReader {
             d.pickupMessageDefault = true;
         }
 
-        if (body.contains(".blockDrop()")) {
+        if (body.contains(".consequenceBlockDrop()")) {
             d.consequence = "block_drop";
-        } else if (body.contains(".blockDelete()")) {
+        } else if (body.contains(".consequenceBlockDelete()")) {
             d.consequence = "block_delete";
-        } else if (body.contains(".block()")) {
+        } else if (body.contains(".consequenceBlock()")) {
             d.consequence = "block";
-        } else if (body.contains(".delete()")) {
+        } else if (body.contains(".consequenceDelete()")) {
             d.consequence = "delete";
-        } else if (body.contains(".drop()")) {
+        } else if (body.contains(".consequenceDrop()")) {
             d.consequence = "drop";
+        } else {
+            Matcher cons = Pattern.compile("\\.consequences\\s*\\(\\s*'((?:\\\\'|[^'])*)'\\s*\\)").matcher(body);
+            if (cons.find()) {
+                d.consequence = unescape(cons.group(1)).trim().toLowerCase(java.util.Locale.ROOT);
+            }
         }
 
         if (body.contains(".viewerHardcore()")) {
@@ -248,6 +257,13 @@ public final class StageGenKubeReader {
         Matcher unbreakable = Pattern.compile("\\.unbreakable\\s*\\(\\s*(true|false)\\s*\\)").matcher(body);
         if (unbreakable.find()) {
             d.unbreakable = Boolean.parseBoolean(unbreakable.group(1));
+        }
+        if (Pattern.compile("\\.disableMimicMining\\s*\\(\\s*\\)").matcher(body).find()) {
+            d.mimicMining = false;
+        }
+        Matcher mimicMining = Pattern.compile("\\.mimicMining\\s*\\(\\s*(true|false)\\s*\\)").matcher(body);
+        if (mimicMining.find()) {
+            d.mimicMining = Boolean.parseBoolean(mimicMining.group(1));
         }
         if (body.contains(".stopTick(true)")) {
             d.stopTick = true;

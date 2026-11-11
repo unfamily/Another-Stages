@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
- * Hit particles skip {@code RenderShape.INVISIBLE}. Use the mimic state so staged blocks still spark.
+ * Hit/destroy particles: camouflaged stage blocks are {@code INVISIBLE}; use the mimic state.
  */
 @Mixin(ClientLevel.class)
 public abstract class ClientLevelBreakEffectMixin {
@@ -21,6 +21,15 @@ public abstract class ClientLevelBreakEffectMixin {
             ordinal = 0,
             remap = false)
     private BlockState anotherStages$mimicHitParticles(BlockState state) {
+        return mimicIfCamouflaged(state);
+    }
+
+    @ModifyVariable(method = "addDestroyBlockEffect", at = @At("HEAD"), argsOnly = true, remap = false)
+    private BlockState anotherStages$mimicDestroyParticles(BlockState state) {
+        return mimicIfCamouflaged(state);
+    }
+
+    private static BlockState mimicIfCamouflaged(BlockState state) {
         if (!AsConfig.mixinBlockAppearance() || !StageBlockHandler.hasAnyRules()) {
             return state;
         }

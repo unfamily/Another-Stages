@@ -223,6 +223,9 @@ public final class StageGenFileReader {
         if (o.has("unbreakable")) {
             d.unbreakable = o.get("unbreakable").getAsBoolean();
         }
+        if (o.has("mimic_mining")) {
+            d.mimicMining = o.get("mimic_mining").getAsBoolean();
+        }
         if (o.has("stop_tick")) {
             d.stopTick = o.get("stop_tick").getAsBoolean();
         }

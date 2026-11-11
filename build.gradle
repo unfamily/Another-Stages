@@ -195,6 +195,7 @@ dependencies {
                     '../Colossal-Reactors-26/build/libs/colossal_reactors-2.6.0.0.0-neoforge-26.1.2.jar',
             ]),
             pickFirstExisting([
+                    'libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.2.2.jar',
                     '../Replication-AE2-Bridge-26.1.2/build/libs/rep_ae2_bridge-3.2.0.2.1.jar',
                     '../Replication-AE2-Bridge/build/libs/rep_ae2_bridge-3.2.0.2.2.jar',

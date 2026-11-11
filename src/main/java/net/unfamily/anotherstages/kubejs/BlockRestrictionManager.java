@@ -85,6 +85,21 @@ public final class BlockRestrictionManager {
         }
 
         /**
+         * When {@code true} (default): break speed and harvest/tool checks use the mimic block.
+         * Prefer {@link #disableMimicMining()} to turn off.
+         */
+        public BlockRestrictBuilder mimicMining(boolean mimicMining) {
+            rule.mimicMining = mimicMining;
+            return this;
+        }
+
+        /** Explicit opt-out: keep real-block dig speed / harvest while the rule applies. */
+        public BlockRestrictBuilder disableMimicMining() {
+            rule.mimicMining = false;
+            return this;
+        }
+
+        /**
          * DANGEROUS / best-effort: skip BlockEntity + scheduled + random ticks while the rule applies.
          * Default {@code false}. Prefer world stages; not universal for mod machines with custom loops.
          */
@@ -176,6 +191,7 @@ public final class BlockRestrictionManager {
             parts.add(rule.mimic);
             parts.add(String.valueOf(rule.camouflage));
             parts.add(String.valueOf(rule.unbreakable));
+            parts.add(String.valueOf(rule.mimicMining));
             parts.add(String.valueOf(rule.stopTick));
             parts.add(String.join(",", rule.blocks));
             parts.add(String.join(",", rule.exclude));

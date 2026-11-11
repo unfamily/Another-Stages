@@ -93,6 +93,7 @@
   "screen.another_stages.stage_generator.field.mimic": "Mimic",
   "screen.another_stages.stage_generator.field.camouflage": "Camouflage",
   "screen.another_stages.stage_generator.field.unbreakable": "Unbreakable",
+  "screen.another_stages.stage_generator.field.mimic_mining": "Mimic mining",
   "screen.another_stages.stage_generator.field.stop_tick": "Stop tick",
   "screen.another_stages.stage_generator.field.break_msg": "Break msg default",
   "screen.another_stages.stage_generator.field.interact_msg": "Interact msg default",
