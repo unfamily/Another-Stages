@@ -2,8 +2,10 @@ package net.unfamily.anotherstages.mixin;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.CrafterBlock;
 import net.minecraft.world.level.block.entity.CrafterBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,11 +24,11 @@ public abstract class CrafterBlockMixin {
             remap = false,
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/level/block/CrafterBlock;getPotentialResults(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/crafting/CraftingInput;)Ljava/util/Optional;",
+                    target = "Lnet/minecraft/world/level/block/CrafterBlock;getPotentialResults(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/crafting/CraftingInput;)Ljava/util/Optional;",
                     remap = false))
     private Optional<RecipeHolder<CraftingRecipe>> anotherStages$gateCrafter(
-            ServerLevel level,
-            net.minecraft.world.item.crafting.CraftingInput input,
+            Level level,
+            CraftingInput input,
             BlockState state,
             ServerLevel levelArg,
             BlockPos pos) {

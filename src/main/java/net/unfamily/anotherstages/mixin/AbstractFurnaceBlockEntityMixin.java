@@ -3,10 +3,10 @@ package net.unfamily.anotherstages.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.config.AsConfig;
@@ -29,12 +29,12 @@ public abstract class AbstractFurnaceBlockEntityMixin {
             method = {"serverTick", "getTotalCookTime"},
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/crafting/RecipeManager$CachedCheck;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/server/level/ServerLevel;)Ljava/util/Optional;"))
+                    target = "Lnet/minecraft/world/item/crafting/RecipeManager$CachedCheck;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;"))
     private static <I extends RecipeInput, T extends net.minecraft.world.item.crafting.Recipe<I>>
             Optional<RecipeHolder<T>> anotherStages$gateFurnaceRecipe(
                     RecipeManager.CachedCheck<I, T> check,
                     I input,
-                    ServerLevel level,
+                    Level level,
                     Operation<Optional<RecipeHolder<T>>> original,
                     @Local(argsOnly = true) AbstractFurnaceBlockEntity furnace) {
         Optional<RecipeHolder<T>> recipe = original.call(check, input, level);

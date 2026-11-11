@@ -3,7 +3,6 @@ package net.unfamily.anotherstages.mixin;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -13,6 +12,7 @@ import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +27,7 @@ public abstract class CraftingMenuMixin {
     @WrapMethod(method = "slotChangedCraftingGrid")
     private static void anotherStages$gateSlotChangedCraftingGrid(
             AbstractContainerMenu menu,
-            ServerLevel level,
+            Level level,
             Player player,
             CraftingContainer container,
             ResultContainer resultSlots,
