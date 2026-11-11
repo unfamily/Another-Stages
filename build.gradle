@@ -183,6 +183,9 @@ dependencies {
     }
     def optionalLocal = [
             pickFirstExisting([
+                    '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.1.1.jar',
+                    '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.1.1-neoforge-26.1.2.jar',
+                    '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.1.0.jar',
                     '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.0.1-neoforge-26.1.2.jar',
                     '../iskandert_utilities_26/build/libs/iska_utils-3.13.0.0.0-neoforge-26.1.2.jar',
             ]),
