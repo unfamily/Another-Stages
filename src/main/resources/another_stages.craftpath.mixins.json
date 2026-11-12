@@ -1,0 +1,22 @@
+{
+  "required": false,
+  "package": "net.unfamily.anotherstages.mixin.compat",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "another_stages.refmap.json",
+  "plugin": "net.unfamily.anotherstages.mixin.compat.AsCompatMixinPlugin",
+  "mixins": [
+    "extendedae.TileExMolecularAssemblerMixin",
+    "extendedae.CraftingThreadAcceptJobMixin",
+    "energizedpower.AbstractAutoCrafterBlockEntityMixin",
+    "energizedpower.SelectableRecipeMachineBlockEntityMixin",
+    "toms.CraftingTerminalMenuMixin",
+    "sophisticated.CraftingUpgradeContainerMixin",
+    "refinedstorage.RecipeMatrixMixin",
+    "refinedstorage.PatternGridBlockEntityMixin",
+    "refinedstorage.AutocrafterBlockEntityMixin"
+  ],
+  "minVersion": "0.8",
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

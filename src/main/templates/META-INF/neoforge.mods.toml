@@ -27,6 +27,15 @@ config="${mod_id}.fastfurnace.mixins.json"
 [[mixins]]
 config="${mod_id}.polymorph.mixins.json"
 
+[[mixins]]
+config="${mod_id}.ae2.mixins.json"
+
+[[mixins]]
+config="${mod_id}.craftpath.mixins.json"
+
+[[mixins]]
+config="${mod_id}.ironfurnaces.mixins.json"
+
 # [[mixins]]
 # config="${mod_id}.jei.mixins.json"
 
@@ -88,6 +97,13 @@ config="${mod_id}.polymorph.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="replication"
+    type="optional"
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="ironfurnaces"
     type="optional"
     versionRange="[0,)"
     ordering="NONE"

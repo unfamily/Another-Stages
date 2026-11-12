@@ -190,5 +190,7 @@
   "screen.another_stages.stage_generator.string.empty": "No entries yet.",
   "screen.another_stages.stage_generator.string.entry_title": "Edit value",
   "screen.another_stages.stage_generator.field.add_tag": "Tag (without #)",
-  "screen.another_stages.stage_generator.field.add_mod": "Mod id (without @)"
+  "screen.another_stages.stage_generator.field.add_mod": "Mod id (without @)",
+  "another_stages.ae2.craft_blocked": "Autocraft blocked by a stage lock",
+  "another_stages.ae2.craft_blocked_recipe": "Cannot encode/craft — stage lock: %s"
 }
