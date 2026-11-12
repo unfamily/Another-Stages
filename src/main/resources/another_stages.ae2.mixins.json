@@ -1,0 +1,20 @@
+{
+  "required": false,
+  "package": "net.unfamily.anotherstages.mixin.compat.ae2",
+  "compatibilityLevel": "JAVA_25",
+  "refmap": "another_stages.refmap.json",
+  "plugin": "net.unfamily.anotherstages.mixin.compat.AsCompatMixinPlugin",
+  "mixins": [
+    "PatternEncodingTermMenuMixin",
+    "CraftingServiceSubmitMixin",
+    "MolecularAssemblerPushPatternMixin",
+    "CraftingTermMenuMixin",
+    "InscriberBlockEntityMixin",
+    "ChargerBlockEntityMixin",
+    "TransformLogicMixin"
+  ],
+  "minVersion": "0.8",
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

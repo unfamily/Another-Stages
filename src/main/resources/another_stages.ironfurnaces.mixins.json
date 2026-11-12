@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "package": "net.unfamily.anotherstages.mixin.compat.ironfurnaces",
+  "compatibilityLevel": "JAVA_25",
+  "refmap": "another_stages.refmap.json",
+  "plugin": "net.unfamily.anotherstages.mixin.compat.AsCompatMixinPlugin",
+  "mixins": [
+    "BlockIronFurnaceTileBaseMixin"
+  ],
+  "minVersion": "0.8",
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
