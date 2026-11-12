@@ -15,19 +15,19 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Gate Charger recipe conversion in the tick path only. {@code allowInsert} still uses
- * ungated {@link ChargerRecipes#findRecipe} / {@code allowInsert} so items can be inserted.
+ * Gate Charger recipe conversion in {@code doWork} only. {@code allowInsert} still uses
+ * ungated {@link ChargerRecipes#findRecipe} so items can be inserted.
  */
 @Mixin(value = ChargerBlockEntity.class, remap = false)
 public abstract class ChargerBlockEntityMixin {
     @WrapOperation(
-            method = "tickingRequest",
+            method = "doWork",
             remap = false,
             at = @At(
                     value = "INVOKE",
                     target = "Lappeng/blockentity/misc/ChargerRecipes;findRecipe(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/item/ItemStack;)Lappeng/recipes/handlers/ChargerRecipe;",
                     remap = false))
-    private ChargerRecipe anotherStages$gateChargerTick(
+    private ChargerRecipe anotherStages$gateChargerWork(
             ServerLevel level,
             ItemStack input,
             Operation<ChargerRecipe> original) {

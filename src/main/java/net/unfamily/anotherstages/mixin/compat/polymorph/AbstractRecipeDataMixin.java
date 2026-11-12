@@ -21,9 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Filters stage-locked recipes out of Polymorph+ candidate resolution so locked
+ * Filters stage-locked recipes out of Polymorph / Polymorph+ candidate resolution so locked
  * alternatives are not auto-selected or shown in the conflict UI. Also refuses
  * {@code selectRecipe} when the chosen holder is stage-locked.
+ * Targets {@code AbstractRecipeData} shared by classic {@code polymorph} and {@code polymorph_plus}.
  */
 @Mixin(value = AbstractRecipeData.class, remap = false)
 public abstract class AbstractRecipeDataMixin {

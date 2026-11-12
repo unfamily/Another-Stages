@@ -26,7 +26,7 @@ public abstract class TransformLogicMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Ljava/util/List;isEmpty()Z",
-                    ordinal = 1))
+                    ordinal = 0))
     private static boolean anotherStages$gateTransformConsume(
             List<?> missingIngredients,
             Operation<Boolean> original,

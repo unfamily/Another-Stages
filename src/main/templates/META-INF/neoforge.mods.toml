@@ -231,6 +231,13 @@ config="${mod_id}.ironfurnaces.mixins.json"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
+    modId="polymorph"
+    type="optional"
+    versionRange="[0,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
     modId="jade"
     type="optional"
     versionRange="[0,)"

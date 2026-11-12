@@ -11,7 +11,8 @@
     "CraftingTermMenuMixin",
     "InscriberBlockEntityMixin",
     "ChargerBlockEntityMixin",
-    "TransformLogicMixin"
+    "TransformLogicMixin",
+    "EntropyManipulatorItemMixin"
   ],
   "minVersion": "0.8",
   "injectors": {

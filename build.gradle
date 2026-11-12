@@ -218,10 +218,13 @@ dependencies {
     localRuntime "curse.maven:applied-energistics-2-223794:${ae2_file_id}"
     compileOnly "curse.maven:extendedae-892005:${extendedae_file_id}"
     localRuntime "curse.maven:extendedae-892005:${extendedae_file_id}"
+    compileOnly "curse.maven:glodium-957920:${glodium_file_id}"
+    localRuntime "curse.maven:glodium-957920:${glodium_file_id}"
     compileOnly "curse.maven:advancedae-1084104:${advancedae_file_id}"
     compileOnly "io.github.pedroksl:ae2addonlib:26.1.3-alpha"
     localRuntime "curse.maven:advancedae-1084104:${advancedae_file_id}"
     localRuntime "io.github.pedroksl:ae2addonlib:26.1.3-alpha"
+    localRuntime "curse.maven:geckolib-388172:${geckolib_file_id}"
     compileOnly "curse.maven:refined-storage-243076:${refinedstorage_file_id}"
     localRuntime "curse.maven:refined-storage-243076:${refinedstorage_file_id}"
     compileOnly "curse.maven:toms-storage-378609:${toms_storage_file_id}"
@@ -273,16 +276,30 @@ dependencies {
     }
     // itemListMod == 'none' → compileOnly only
 
-    // Fast* + Placebo + Polymorph+ — localRuntime for recipe-gate testing (crafting / furnace / conflicts).
+    // Fast* + Placebo + Polymorph — localRuntime for recipe-gate testing (crafting / furnace / conflicts).
     compileOnly "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     compileOnly "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:fastworkbench-288885:${fastworkbench_file_id}"
     localRuntime "curse.maven:fastfurnace-299540:${fastfurnace_file_id}"
     localRuntime "curse.maven:placebo-283644:${placebo_file_id}"
 
-    // Polymorph+ (Aminoquiz fork) — mod id polymorph_plus; filter stage-locked conflict candidates.
+    // Polymorph / Polymorph+ — exclusive via runtime_polymorph_mod (plus | classic | none).
+    // Both keep com.illusivesoulworks.polymorph.AbstractRecipeData (AS mixin target).
+    def polymorphMod = (findProperty('runtime_polymorph_mod') ?: 'plus').toString()
     compileOnly "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
-    localRuntime "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
+    compileOnly "curse.maven:polymorph-unofficial-port-1615358:${polymorph_classic_file_id}"
+    if (polymorphMod == 'plus') {
+        localRuntime "curse.maven:polymorph-plus-1586874:${polymorph_plus_file_id}"
+        // Polymorphic AE2 hard-requires polymorph_plus — never pair with classic.
+        localRuntime "curse.maven:polymorphic-ae2-1666854:${polymorphic_ae2_file_id}"
+    } else if (polymorphMod == 'classic') {
+        localRuntime "curse.maven:polymorph-unofficial-port-1615358:${polymorph_classic_file_id}"
+        // No Polymorphic AE2 on classic (requires polymorph_plus). No polyeng for 26.1.2.
+    }
+    // RS Polymorph is standalone (no Polymorph dep) — useful conflict UI next to RS path gates.
+    if (polymorphMod == 'plus' || polymorphMod == 'classic') {
+        localRuntime "curse.maven:rs-polymorph-1492934:${rspolymorph_file_id}"
+    }
 
     // Jade — stage_block / stage_item tooltip disguise
     compileOnly "curse.maven:jade-324717:${jade_file_id}"

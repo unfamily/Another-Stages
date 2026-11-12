@@ -7,15 +7,20 @@
   "mixins": [
     "extendedae.TileExMolecularAssemblerMixin",
     "extendedae.CraftingThreadAcceptJobMixin",
+    "extendedae.TileExChargerMixin",
+    "extendedae.RecipeExecutorMixin",
+    "advancedae.QuantumCrafterEntityMixin",
+    "advancedae.ReactionChamberEntityMixin",
     "energizedpower.AbstractAutoCrafterBlockEntityMixin",
     "energizedpower.SelectableRecipeMachineBlockEntityMixin",
     "toms.CraftingTerminalMenuMixin",
     "sophisticated.CraftingUpgradeContainerMixin",
     "refinedstorage.RecipeMatrixMixin",
     "refinedstorage.PatternGridBlockEntityMixin",
-    "refinedstorage.AutocrafterBlockEntityMixin",
-    "advancedae.QuantumCrafterEntityMixin",
-    "enderio.CrafterBlockEntityMixin"
+    "refinedstorage.AutocrafterBlockEntityMixin"
+  ],
+  "client": [
+    "advancedae.ReactionChamberCategoryMixin"
   ],
   "minVersion": "0.8",
   "injectors": {

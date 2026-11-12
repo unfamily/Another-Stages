@@ -25,8 +25,8 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
             return isLoaded("fastbench");
         }
         if (lower.contains("polymorph")) {
-            // Polymorph+ on 26.1.2 uses mod id polymorph_plus (not upstream polymorph).
-            return isLoaded("polymorph_plus");
+            // Polymorph+ (polymorph_plus) or classic / unofficial port (polymorph) — never both at runtime.
+            return isLoaded("polymorph_plus") || isLoaded("polymorph");
         }
         if (lower.contains(".jei.") || lower.contains("simpleitemstackbatchrenderer")) {
             return isLoaded("jei");
