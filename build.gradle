@@ -209,7 +209,42 @@ dependencies {
     // Bridge + textures stack (Titanium → Replication; AE2; Fusion CT)
     localRuntime "curse.maven:titanium-287342:${titanium_file_id}"
     localRuntime "curse.maven:replication-638351:${replication_file_id}"
+    // Iron Furnaces — vanilla smelting path (full support once gated)
+    compileOnly "curse.maven:iron-furnaces-237664:${ironfurnaces_file_id}"
+    localRuntime "curse.maven:iron-furnaces-237664:${ironfurnaces_file_id}"
+
+    // AE2 + network craft-path gates (compileOnly for mixins; localRuntime for runClient/Server)
+    compileOnly "curse.maven:applied-energistics-2-223794:${ae2_file_id}"
     localRuntime "curse.maven:applied-energistics-2-223794:${ae2_file_id}"
+    compileOnly "curse.maven:extendedae-892005:${extendedae_file_id}"
+    localRuntime "curse.maven:extendedae-892005:${extendedae_file_id}"
+    compileOnly "curse.maven:advancedae-1084104:${advancedae_file_id}"
+    compileOnly "io.github.pedroksl:ae2addonlib:26.1.3-alpha"
+    localRuntime "curse.maven:advancedae-1084104:${advancedae_file_id}"
+    localRuntime "io.github.pedroksl:ae2addonlib:26.1.3-alpha"
+    compileOnly "curse.maven:refined-storage-243076:${refinedstorage_file_id}"
+    localRuntime "curse.maven:refined-storage-243076:${refinedstorage_file_id}"
+    compileOnly "curse.maven:toms-storage-378609:${toms_storage_file_id}"
+    localRuntime "curse.maven:toms-storage-378609:${toms_storage_file_id}"
+    compileOnly "curse.maven:sophisticated-core-618298:${sophisticatedcore_file_id}"
+    localRuntime "curse.maven:sophisticated-core-618298:${sophisticatedcore_file_id}"
+    compileOnly "curse.maven:sophisticated-backpacks-422301:${sophisticatedbackpacks_file_id}"
+    localRuntime "curse.maven:sophisticated-backpacks-422301:${sophisticatedbackpacks_file_id}"
+    compileOnly "curse.maven:sophisticated-storage-619320:${sophisticatedstorage_file_id}"
+    localRuntime "curse.maven:sophisticated-storage-619320:${sophisticatedstorage_file_id}"
+    // Flattened EIO + JarJar endercore classes for Mixin AP hierarchy resolution
+    compileOnly files('libs/enderio-flat')
+    localRuntime "curse.maven:enderio-64578:${enderio_file_id}"
+    compileOnly "curse.maven:energized-power-782147:${energizedpower_file_id}"
+    localRuntime "curse.maven:energized-power-782147:${energizedpower_file_id}"
+    compileOnly "curse.maven:cyclops-core-232758:${cyclopscore_file_id}"
+    localRuntime "curse.maven:cyclops-core-232758:${cyclopscore_file_id}"
+    compileOnly "curse.maven:common-capabilities-247007:${commoncapabilities_file_id}"
+    localRuntime "curse.maven:common-capabilities-247007:${commoncapabilities_file_id}"
+    compileOnly "curse.maven:integrated-dynamics-236307:${integrateddynamics_file_id}"
+    localRuntime "curse.maven:integrated-dynamics-236307:${integrateddynamics_file_id}"
+    compileOnly "curse.maven:integrated-crafting-287357:${integratedcrafting_file_id}"
+    localRuntime "curse.maven:integrated-crafting-287357:${integratedcrafting_file_id}"
     localRuntime "curse.maven:guideme-1173950:${guideme_file_id}"
     localRuntime "curse.maven:fusion-connected-textures-854949:${fusion_file_id}"
 

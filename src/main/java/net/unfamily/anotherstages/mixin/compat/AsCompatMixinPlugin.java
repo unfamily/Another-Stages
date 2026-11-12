@@ -39,6 +39,48 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
         if (lower.contains("abstractfurnaceblockentitymixin")) {
             return !isLoaded("fastfurnace");
         }
+        if (lower.contains("ironfurnaces") || lower.contains("iron_furnaces")) {
+            return isLoaded("ironfurnaces");
+        }
+        if (lower.contains(".ae2.") || lower.contains("compat.ae2")) {
+            return isLoaded("ae2");
+        }
+        if (lower.contains(".refinedstorage") || lower.contains("compat.rs2") || lower.contains("compat.refinedstorage")) {
+            return isLoaded("refinedstorage");
+        }
+        if (lower.contains("toms_storage") || lower.contains("tomsstorage") || lower.contains("compat.toms")) {
+            return isLoaded("toms_storage");
+        }
+        if (lower.contains("sophisticated")) {
+            return isLoaded("sophisticatedbackpacks") || isLoaded("sophisticatedstorage");
+        }
+        if (lower.contains(".create.") || lower.contains("compat.create")) {
+            return isLoaded("create");
+        }
+        if (lower.contains("enderio")) {
+            return isLoaded("enderio");
+        }
+        if (lower.contains("energizedpower") || lower.contains("energized_power")) {
+            return isLoaded("energizedpower");
+        }
+        if (lower.contains("craftingstation")) {
+            return isLoaded("craftingstation");
+        }
+        if (lower.contains("mekanism")) {
+            return isLoaded("mekanism");
+        }
+        if (lower.contains("integrateddynamics") || lower.contains("integratedcrafting")) {
+            return isLoaded("integrateddynamics") || isLoaded("integratedcrafting");
+        }
+        if (lower.contains("forestry")) {
+            return isLoaded("forestry");
+        }
+        if (lower.contains("extendedae") || lower.contains("expatternprovider")) {
+            return isLoaded("extendedae") || isLoaded("expatternprovider");
+        }
+        if (lower.contains("advancedae")) {
+            return isLoaded("advanced_ae") || isLoaded("advancedae");
+        }
         return true;
     }
 

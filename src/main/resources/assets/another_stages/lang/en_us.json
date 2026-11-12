@@ -24,6 +24,8 @@
   "item.another_stages.unfamiliar_fish": "Unfamiliar Fish",
   "message.another_stages.gui_blocked": "This menu is locked by a stage",
   "message.another_stages.recipe_blocked": "This recipe is locked by a stage",
+  "another_stages.ae2.craft_blocked": "Autocraft blocked by a stage lock",
+  "another_stages.ae2.craft_blocked_recipe": "Cannot encode/craft — stage lock: %s",
   "message.another_stages.block_locked": "This block is locked by a stage",
   "message.another_stages.block_unknown": "Unknown Block",
   "message.another_stages.item_pickup_blocked": "You cannot pick up this item yet",

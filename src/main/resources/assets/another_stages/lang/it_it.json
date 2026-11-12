@@ -190,5 +190,7 @@
   "screen.another_stages.stage_generator.string.empty": "Nessuna voce ancora.",
   "screen.another_stages.stage_generator.string.entry_title": "Modifica valore",
   "screen.another_stages.stage_generator.field.add_tag": "Tag (senza #)",
-  "screen.another_stages.stage_generator.field.add_mod": "Id mod (senza @)"
+  "screen.another_stages.stage_generator.field.add_mod": "Id mod (senza @)",
+  "another_stages.ae2.craft_blocked": "Autocraft bloccato da uno stage",
+  "another_stages.ae2.craft_blocked_recipe": "Impossibile codificare/craftare — stage: %s"
 }

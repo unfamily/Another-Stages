@@ -57,4 +57,24 @@ public final class RecipeStageGate {
         }
         return isBlockedForMachine(recipeKey.identifier(), be, level);
     }
+
+    /**
+     * Gate with an explicit owner UUID (native mod owner, network node profile, or player).
+     * {@code ownerUuid == null} still evaluates world stages via the bridge/providers.
+     */
+    public static boolean isBlockedForOwner(
+            @Nullable Identifier recipeId, @Nullable UUID ownerUuid, @Nullable Level level) {
+        if (recipeId == null) {
+            return false;
+        }
+        return RecipeBlockBridge.isRecipeBlocked(recipeId, ownerUuid, level);
+    }
+
+    public static boolean isBlockedForOwner(
+            @Nullable ResourceKey<Recipe<?>> recipeKey, @Nullable UUID ownerUuid, @Nullable Level level) {
+        if (recipeKey == null) {
+            return false;
+        }
+        return isBlockedForOwner(recipeKey.identifier(), ownerUuid, level);
+    }
 }

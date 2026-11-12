@@ -79,6 +79,57 @@ public final class AsConfig {
             .comment("Gate AbstractContainerMenu.clicked for stage_gui blocked slots/items.")
             .define("gui_slots", true);
 
+    public static final ModConfigSpec.BooleanValue MIXIN_IRONFURNACES = BUILDER
+            .comment("Gate Iron Furnaces cook start (getRecipeNonCached); insert remains allowed.")
+            .define("ironfurnaces", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_AE2 = BUILDER
+            .comment(
+                    "Gate Applied Energistics 2 path coverage: pattern encode, autocraft submit,",
+                    "Molecular Assembler push, Crafting Terminal, Inscriber/Charger process, in-world transform.",
+                    "ExtendedAE/AdvancedAE share AE2 encode/submit when on the same grid.")
+            .define("ae2", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_REFINEDSTORAGE = BUILDER
+            .comment("Gate Refined Storage 2 autocraft / crafting grid path coverage.")
+            .define("refinedstorage", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_TOMS_STORAGE = BUILDER
+            .comment("Gate Tom's Simple Storage crafting terminal path coverage.")
+            .define("toms_storage", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_SOPHISTICATED = BUILDER
+            .comment("Gate Sophisticated Backpacks/Storage crafting (and related) path coverage.")
+            .define("sophisticated", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CREATE = BUILDER
+            .comment("Gate Create Mechanical Crafter path coverage (when Create is present).")
+            .define("create", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_ENDERIO = BUILDER
+            .comment("Gate Ender IO Crafter path coverage.")
+            .define("enderio", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_ENERGIZEDPOWER = BUILDER
+            .comment("Gate Energized Power auto crafter / stonecutter / smithing path coverage.")
+            .define("energizedpower", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CRAFTINGSTATION = BUILDER
+            .comment("Gate Crafting Station menu path coverage.")
+            .define("craftingstation", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_MEKANISM = BUILDER
+            .comment("Gate Mekanism Formulaic Assemblicator / QIO crafting path coverage.")
+            .define("mekanism", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_INTEGRATEDDYNAMICS = BUILDER
+            .comment("Gate Integrated Dynamics / Crafting path coverage.")
+            .define("integrateddynamics", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_FORESTRY = BUILDER
+            .comment("Gate Forestry CE Worktable path coverage.")
+            .define("forestry", true);
+
     static {
         BUILDER.pop();
         BUILDER.comment(
@@ -202,6 +253,54 @@ public final class AsConfig {
 
     public static boolean mixinGuiSlots() {
         return loaded(MIXIN_GUI_SLOTS, true);
+    }
+
+    public static boolean mixinIronFurnaces() {
+        return loaded(MIXIN_IRONFURNACES, true);
+    }
+
+    public static boolean mixinAe2() {
+        return loaded(MIXIN_AE2, true);
+    }
+
+    public static boolean mixinRefinedStorage() {
+        return loaded(MIXIN_REFINEDSTORAGE, true);
+    }
+
+    public static boolean mixinTomsStorage() {
+        return loaded(MIXIN_TOMS_STORAGE, true);
+    }
+
+    public static boolean mixinSophisticated() {
+        return loaded(MIXIN_SOPHISTICATED, true);
+    }
+
+    public static boolean mixinCreate() {
+        return loaded(MIXIN_CREATE, true);
+    }
+
+    public static boolean mixinEnderio() {
+        return loaded(MIXIN_ENDERIO, true);
+    }
+
+    public static boolean mixinEnergizedPower() {
+        return loaded(MIXIN_ENERGIZEDPOWER, true);
+    }
+
+    public static boolean mixinCraftingStation() {
+        return loaded(MIXIN_CRAFTINGSTATION, true);
+    }
+
+    public static boolean mixinMekanism() {
+        return loaded(MIXIN_MEKANISM, true);
+    }
+
+    public static boolean mixinIntegratedDynamics() {
+        return loaded(MIXIN_INTEGRATEDDYNAMICS, true);
+    }
+
+    public static boolean mixinForestry() {
+        return loaded(MIXIN_FORESTRY, true);
     }
 
     private static boolean loaded(ModConfigSpec.BooleanValue value, boolean defaultIfUnloaded) {
