@@ -178,12 +178,34 @@ public final class StageRecipeRvHelper {
         }
         if (category != null) {
             try {
-                return ((IRecipeCategory) category).getRegistryName(recipe);
+                ResourceLocation fromCategory = ((IRecipeCategory) category).getRegistryName(recipe);
+                if (fromCategory != null) {
+                    return fromCategory;
+                }
             } catch (RuntimeException | AbstractMethodError | NoSuchMethodError ignored) {
-                return null;
+                // fall through
             }
         }
-        return null;
+        return advAeReactionIdSoft(recipe);
+    }
+
+    /**
+     * AdvAE JEI strips holders to bare {@code ReactionChamberRecipe}; restore id via recipe manager.
+     * Soft-reflective so AdvAE absence does not break class load.
+     */
+    @Nullable
+    private static ResourceLocation advAeReactionIdSoft(@Nullable Object recipe) {
+        if (recipe == null
+                || !"net.pedroksl.advanced_ae.recipes.ReactionChamberRecipe".equals(recipe.getClass().getName())) {
+            return null;
+        }
+        try {
+            Class<?> helper = Class.forName("net.unfamily.anotherstages.compat.advancedae.AdvAeReactionIds");
+            Object id = helper.getMethod("idOf", Object.class).invoke(null, recipe);
+            return id instanceof ResourceLocation rl ? rl : null;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return null;
+        }
     }
 
     @Nullable

@@ -62,7 +62,7 @@ public final class AsConfig {
             .define("fastfurnace", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_POLYMORPH = BUILDER
-            .comment("Filter stage-locked recipes from Polymorph+ conflict candidates / selectRecipe.")
+            .comment("Filter stage-locked recipes from Polymorph / Polymorph+ conflict candidates / selectRecipe.")
             .define("polymorph", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_BLOCK_APPEARANCE = BUILDER
