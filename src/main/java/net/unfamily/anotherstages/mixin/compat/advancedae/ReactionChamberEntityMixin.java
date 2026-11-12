@@ -17,6 +17,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Prevent Reaction Chamber processing when the matched AdvAE reaction recipe is stage-locked.
  * Insert remains allowed; {@code getTask} drives process start only.
+ * <p>
+ * AdvAE {@code hasCraftWork} returns {@code isWorking()} when {@code getTask()} is null — so a
+ * stage lock must also clear working/progress, otherwise {@code tickingRequest} still extracts
+ * energy via {@code getTask().getEnergy()} and NPEs.
  */
 @Mixin(value = ReactionChamberEntity.class, remap = false)
 public abstract class ReactionChamberEntityMixin {
@@ -41,6 +45,10 @@ public abstract class ReactionChamberEntityMixin {
                             Ae2NetworkOwners.fromNode(self.getMainNode().getNode()),
                             level)) {
                 this.cachedTask = null;
+                // AdvAE hasCraftWork falls back to isWorking() when getTask is null — clear it
+                // so tickingRequest does not NPE on getTask().getEnergy(). Processing time is
+                // reset by AdvAE's hasCraftWork null-task branch.
+                self.setWorking(false);
                 cir.setReturnValue(null);
                 return;
             }

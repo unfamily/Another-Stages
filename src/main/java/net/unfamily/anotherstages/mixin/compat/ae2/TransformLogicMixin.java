@@ -16,7 +16,11 @@ import java.util.List;
 
 /**
  * Skip in-world AE2 transform recipes that are stage-locked (world stages; no network owner).
- * Prevents consume when locked by treating the ingredient list as non-empty.
+ * Prevents consume when locked by treating the missing-ingredient list as non-empty.
+ * <p>
+ * AE2 26 {@code tryTransform} calls {@code List.isEmpty()} twice: ordinal 0 is
+ * {@code recipe.ingredients.isEmpty()} (early continue); ordinal 1 is
+ * {@code missingIngredients.isEmpty()} (consume gate). Gate must wrap ordinal 1.
  */
 @Mixin(value = TransformLogic.class, remap = false)
 public abstract class TransformLogicMixin {
@@ -26,7 +30,7 @@ public abstract class TransformLogicMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Ljava/util/List;isEmpty()Z",
-                    ordinal = 0))
+                    ordinal = 1))
     private static boolean anotherStages$gateTransformConsume(
             List<?> missingIngredients,
             Operation<Boolean> original,

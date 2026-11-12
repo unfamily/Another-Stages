@@ -19,9 +19,6 @@
     "refinedstorage.PatternGridBlockEntityMixin",
     "refinedstorage.AutocrafterBlockEntityMixin"
   ],
-  "client": [
-    "advancedae.ReactionChamberCategoryMixin"
-  ],
   "minVersion": "0.8",
   "injectors": {
     "defaultRequire": 0
