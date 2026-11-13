@@ -77,6 +77,7 @@
   "screen.another_stages.stage_generator.search.empty": "Nessun risultato.",
   "screen.another_stages.stage_generator.ghost_hint": "Ghost slot: clic sull'inventario o drag da JEI/EMI/REI",
   "screen.another_stages.stage_generator.field.id": "Id",
+  "screen.another_stages.stage_generator.field.priority": "Priorità",
   "screen.another_stages.stage_generator.field.inventory_ticks": "Inventory ticks",
   "screen.another_stages.stage_generator.field.cases_all": "Cases all",
   "screen.another_stages.stage_generator.field.case_right": "Click destro",

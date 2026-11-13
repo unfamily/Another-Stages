@@ -98,6 +98,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     private @Nullable EditBox mimicBox;
     private @Nullable EditBox ticksBox;
     private @Nullable EditBox maxSlotsBox;
+    private @Nullable EditBox priorityBox;
     private @Nullable EditBox matcherValueBox;
     private @Nullable EditBox stringValueBox;
     private @Nullable SuggestingEditBox stageIdBox;
@@ -154,6 +155,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         mimicBox = null;
         ticksBox = null;
         maxSlotsBox = null;
+        priorityBox = null;
         matcherValueBox = null;
         stringValueBox = null;
         stageIdBox = null;
@@ -850,6 +852,14 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         };
         addFormLabel(FORM_LEFT, 8, FORM_WIDTH, titleKey);
 
+        addFormLabel(formColX(0, 2), 22, formColW(0, 2), "screen.another_stages.stage_generator.field.priority");
+        priorityBox = addFormBox(formColX(1, 2), 22, formColW(1, 2), 12, String.valueOf(draft.priority), 12, v -> {
+            try {
+                draft.priority = Integer.parseInt(v.trim());
+            } catch (Exception ignored) {
+            }
+        });
+
         switch (draft.category) {
             case ITEM -> buildItemEntryFields(draft);
             case RECIPE -> buildRecipeEntryFields(draft);
@@ -868,7 +878,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void buildItemEntryFields(RestrictionDraft draft) {
-        int navY = 22;
+        int navY = 38;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -881,7 +891,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude", draft.exclude.size()),
                 () -> openSub(SubView.EXCLUDE));
 
-        int navY2 = 40;
+        int navY2 = 56;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.nav.cases"),
                 () -> openSub(SubView.CASES));
@@ -895,7 +905,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                     rebuild();
                 });
 
-        int row = 60;
+        int row = 76;
         addFormLabel(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.recipe_viewer");
         addFormCycle(formColX(1, 2), row, formColW(1, 2), 12,
                 Component.literal(draft.recipeViewer),
@@ -904,13 +914,13 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                     rebuild();
                 });
 
-        row = 76;
+        row = 92;
         addFormToggle(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.can_pickup_label",
                 () -> draft.canPickup, v -> draft.canPickup = v);
         addFormToggle(formColX(1, 2), row, formColW(1, 2), "screen.another_stages.stage_generator.field.hide_item_name_label",
                 () -> draft.hideItemName, v -> draft.hideItemName = v);
 
-        row = 96;
+        row = 112;
         addFormLabel(formColX(0, 2), row, formColW(0, 2), "screen.another_stages.stage_generator.field.inventory_ticks");
         ticksBox = addFormBox(formColX(1, 2), row, formColW(1, 2), 12, String.valueOf(draft.inventoryTicks), 8, v -> {
             try {
@@ -921,7 +931,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void buildRecipeEntryFields(RestrictionDraft draft) {
-        int navY = 22;
+        int navY = 38;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -934,7 +944,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.recipes", draft.recipes.size()),
                 () -> openSub(SubView.RECIPES));
 
-        int navY2 = 40;
+        int navY2 = 56;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.table.open.recipe_types", draft.recipeTypes.size()),
                 () -> openSub(SubView.RECIPE_TYPES));
@@ -945,7 +955,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude_recipes", draft.excludeRecipes.size()),
                 () -> openSub(SubView.EXCLUDE_RECIPES));
 
-        int row = 60;
+        int row = 76;
         addFormButton(formColX(0, 2), row, formColW(0, 2), 14,
                 Component.translatable("screen.another_stages.stage_generator.table.open.tooltips", draft.tooltips.size()),
                 () -> openSub(SubView.TOOLTIPS));
@@ -958,7 +968,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
     }
 
     private void buildBlockEntryFields(RestrictionDraft draft) {
-        int navY = 22;
+        int navY = 38;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -971,23 +981,23 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.exclude", draft.exclude.size()),
                 () -> openSub(SubView.EXCLUDE));
 
-        addFormLabel(FORM_LEFT, 42, FORM_WIDTH, "screen.another_stages.stage_generator.field.mimic");
-        mimicBox = addFormBox(FORM_LEFT, 52, FORM_WIDTH, 12, draft.mimic, 128, v -> draft.mimic = v == null ? "" : v.trim());
+        addFormLabel(FORM_LEFT, 58, FORM_WIDTH, "screen.another_stages.stage_generator.field.mimic");
+        mimicBox = addFormBox(FORM_LEFT, 68, FORM_WIDTH, 12, draft.mimic, 128, v -> draft.mimic = v == null ? "" : v.trim());
 
-        addFormToggle(formColX(0, 2), 72, formColW(0, 2), "screen.another_stages.stage_generator.field.camouflage",
+        addFormToggle(formColX(0, 2), 88, formColW(0, 2), "screen.another_stages.stage_generator.field.camouflage",
                 () -> draft.camouflage, v -> draft.camouflage = v);
-        addFormToggle(formColX(1, 2), 72, formColW(1, 2), "screen.another_stages.stage_generator.field.unbreakable",
+        addFormToggle(formColX(1, 2), 88, formColW(1, 2), "screen.another_stages.stage_generator.field.unbreakable",
                 () -> draft.unbreakable, v -> draft.unbreakable = v);
-        addFormToggle(formColX(0, 2), 92, formColW(0, 2), "screen.another_stages.stage_generator.field.mimic_mining",
+        addFormToggle(formColX(0, 2), 108, formColW(0, 2), "screen.another_stages.stage_generator.field.mimic_mining",
                 () -> draft.mimicMining, v -> draft.mimicMining = v);
-        addFormToggle(formColX(1, 2), 92, formColW(1, 2), "screen.another_stages.stage_generator.field.stop_tick",
+        addFormToggle(formColX(1, 2), 108, formColW(1, 2), "screen.another_stages.stage_generator.field.stop_tick",
                 () -> draft.stopTick, v -> draft.stopTick = v);
-        addFormToggle(formColX(0, 2), 112, formColW(0, 2), "screen.another_stages.stage_generator.field.break_msg",
+        addFormToggle(formColX(0, 2), 128, formColW(0, 2), "screen.another_stages.stage_generator.field.break_msg",
                 () -> draft.breakMessageDefault, v -> draft.breakMessageDefault = v);
     }
 
     private void buildGuiEntryFields(RestrictionDraft draft) {
-        int navY = 22;
+        int navY = 38;
         int navH = 14;
         int cols = 3;
         addFormButton(formColX(0, cols), navY, formColW(0, cols), navH,
@@ -1000,7 +1010,7 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.menus", draft.menus.size()),
                 () -> openSub(SubView.MENUS));
 
-        int navY2 = 40;
+        int navY2 = 56;
         addFormButton(formColX(0, cols), navY2, formColW(0, cols), navH,
                 Component.translatable("screen.another_stages.stage_generator.table.open.blocked_slots", draft.blockedSlots.size()),
                 () -> openSub(SubView.BLOCKED_SLOTS));
@@ -1008,13 +1018,13 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
                 Component.translatable("screen.another_stages.stage_generator.table.open.blocked_items", draft.blockedItems.size()),
                 () -> openSub(SubView.BLOCKED_ITEMS));
 
-        addFormToggle(formColX(0, 2), 62, formColW(0, 2), "screen.another_stages.stage_generator.field.block_open",
+        addFormToggle(formColX(0, 2), 78, formColW(0, 2), "screen.another_stages.stage_generator.field.block_open",
                 () -> draft.blockOpen, v -> draft.blockOpen = v);
-        addFormToggle(formColX(1, 2), 62, formColW(1, 2), "screen.another_stages.stage_generator.field.gui_msg_default",
+        addFormToggle(formColX(1, 2), 78, formColW(1, 2), "screen.another_stages.stage_generator.field.gui_msg_default",
                 () -> draft.guiMessageDefault, v -> draft.guiMessageDefault = v);
 
-        addFormLabel(formColX(0, 2), 82, formColW(0, 2), "screen.another_stages.stage_generator.field.max_slots");
-        maxSlotsBox = addFormBox(formColX(1, 2), 82, formColW(1, 2), 12, String.valueOf(draft.maxSlots), 8, v -> {
+        addFormLabel(formColX(0, 2), 98, formColW(0, 2), "screen.another_stages.stage_generator.field.max_slots");
+        maxSlotsBox = addFormBox(formColX(1, 2), 98, formColW(1, 2), 12, String.valueOf(draft.maxSlots), 8, v -> {
             try {
                 draft.maxSlots = Integer.parseInt(v.trim());
             } catch (Exception ignored) {
@@ -1367,6 +1377,12 @@ public class StageGeneratorScreen extends AbstractContainerScreen<StageGenerator
         if (maxSlotsBox != null) {
             try {
                 draft.maxSlots = Integer.parseInt(maxSlotsBox.getValue().trim());
+            } catch (Exception ignored) {
+            }
+        }
+        if (priorityBox != null) {
+            try {
+                draft.priority = Integer.parseInt(priorityBox.getValue().trim());
             } catch (Exception ignored) {
             }
         }
