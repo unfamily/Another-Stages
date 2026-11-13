@@ -215,6 +215,7 @@ dependencies {
     localRuntime "maven.modrinth:createaddition:${createaddition_version}"
     compileOnly "maven.modrinth:slice-and-dice:${sliceanddice_version}"
     localRuntime "maven.modrinth:slice-and-dice:${sliceanddice_version}"
+    localRuntime "maven.modrinth:kotlin-for-forge:${kotlinforforge_version}"
     compileOnly "maven.modrinth:create-dragons-plus:${create_dragons_plus_version}"
     localRuntime "maven.modrinth:create-dragons-plus:${create_dragons_plus_version}"
     compileOnly "maven.modrinth:create-enchantment-industry:${create_enchantment_industry_version}"
