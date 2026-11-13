@@ -54,6 +54,19 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
         if (lower.contains("sophisticated")) {
             return isLoaded("sophisticatedbackpacks") || isLoaded("sophisticatedstorage");
         }
+        if (lower.contains("createaddition") || lower.contains("compat.createaddition")) {
+            return isLoaded("createaddition");
+        }
+        if (lower.contains("sliceanddice") || lower.contains("compat.sliceanddice")) {
+            return isLoaded("sliceanddice");
+        }
+        if (lower.contains("createenchantmentindustry")
+                || lower.contains("compat.createenchantmentindustry")) {
+            return isLoaded("create_enchantment_industry");
+        }
+        if (lower.contains("createnewage") || lower.contains("compat.createnewage")) {
+            return isLoaded("create_new_age");
+        }
         if (lower.contains(".create.") || lower.contains("compat.create")) {
             return isLoaded("create");
         }

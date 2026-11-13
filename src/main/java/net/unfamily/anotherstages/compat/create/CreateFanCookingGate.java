@@ -48,4 +48,23 @@ public final class CreateFanCookingGate {
                 .map(holder -> RecipeStageGate.isBlockedForOwner(holder.id(), owner, level))
                 .orElse(false);
     }
+
+    public static boolean isHauntingBlocked(ItemStack stack, Level level) {
+        return isCreateTypeBlocked(AllRecipeTypes.HAUNTING, stack, level);
+    }
+
+    public static boolean isSplashingBlocked(ItemStack stack, Level level) {
+        return isCreateTypeBlocked(AllRecipeTypes.SPLASHING, stack, level);
+    }
+
+    private static boolean isCreateTypeBlocked(AllRecipeTypes type, ItemStack stack, Level level) {
+        if (level == null || stack == null || stack.isEmpty()) {
+            return false;
+        }
+        UUID owner = CreateFanSubject.current();
+        return type.find(new SingleRecipeInput(stack), level)
+                .filter(AllRecipeTypes.CAN_BE_AUTOMATED)
+                .map(holder -> RecipeStageGate.isBlockedForOwner(holder.id(), owner, level))
+                .orElse(false);
+    }
 }

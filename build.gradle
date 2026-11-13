@@ -21,6 +21,11 @@ sourceSets.main.resources {
 repositories {
     maven { url = 'https://maven.ftb.dev/releases' }
     maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+    maven {
         url = 'https://www.cursemaven.com'
         content { includeGroup 'curse.maven' }
     }
@@ -205,6 +210,22 @@ dependencies {
     localRuntime "curse.maven:energized-power-782147:${energizedpower_file_id}"
     compileOnly "curse.maven:create-328085:${create_file_id}"
     localRuntime "curse.maven:create-328085:${create_file_id}"
+    // Create Alta addons (NeoForge 1.21.1) — slightly below latest when available
+    compileOnly "maven.modrinth:createaddition:${createaddition_version}"
+    localRuntime "maven.modrinth:createaddition:${createaddition_version}"
+    compileOnly "maven.modrinth:slice-and-dice:${sliceanddice_version}"
+    localRuntime "maven.modrinth:slice-and-dice:${sliceanddice_version}"
+    compileOnly "maven.modrinth:create-dragons-plus:${create_dragons_plus_version}"
+    localRuntime "maven.modrinth:create-dragons-plus:${create_dragons_plus_version}"
+    compileOnly "maven.modrinth:create-enchantment-industry:${create_enchantment_industry_version}"
+    localRuntime "maven.modrinth:create-enchantment-industry:${create_enchantment_industry_version}"
+    compileOnly "maven.modrinth:create-central-kitchen:${create_central_kitchen_version}"
+    localRuntime "maven.modrinth:create-central-kitchen:${create_central_kitchen_version}"
+    compileOnly files('libs/esl-neoforge-1.21.1-1.0.3.jar')
+    compileOnly "maven.modrinth:create-new-age:${create_new_age_version}"
+    localRuntime "maven.modrinth:create-new-age:${create_new_age_version}"
+    compileOnly "maven.modrinth:farmers-delight:${farmersdelight_version}"
+    localRuntime "maven.modrinth:farmers-delight:${farmersdelight_version}"
     compileOnly "curse.maven:crafting-station-318551:${craftingstation_file_id}"
     localRuntime "curse.maven:crafting-station-318551:${craftingstation_file_id}"
     compileOnly "curse.maven:forestry-community-edition-1056828:${forestry_file_id}"

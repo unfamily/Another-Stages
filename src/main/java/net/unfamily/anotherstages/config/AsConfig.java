@@ -121,9 +121,29 @@ public final class AsConfig {
             .define("sophisticated", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CREATE = BUILDER
-            .comment("Gate Create Mechanical Crafter path coverage (when Create is present).")
+            .comment("Gate Create Mechanical Crafter / processing path coverage (when Create is present).")
             .gameRestart()
             .define("create", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CREATEADDITION = BUILDER
+            .comment("Gate Create Crafts & Additions Rolling Mill / Tesla Coil charging recipes.")
+            .gameRestart()
+            .define("createaddition", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_SLICEANDDICE = BUILDER
+            .comment("Gate Create Slice & Dice Slicer (basin path also uses Create basin gate).")
+            .gameRestart()
+            .define("sliceanddice", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CREATE_ENCHANTMENT_INDUSTRY = BUILDER
+            .comment("Gate Create Enchantment Industry Printer / Grindstone Drain recipes.")
+            .gameRestart()
+            .define("create_enchantment_industry", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CREATE_NEW_AGE = BUILDER
+            .comment("Gate Create New Age Energiser recipes.")
+            .gameRestart()
+            .define("create_new_age", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_ENDERIO = BUILDER
             .comment("Gate Ender IO Crafter path coverage.")
@@ -303,6 +323,22 @@ public final class AsConfig {
 
     public static boolean mixinCreate() {
         return loaded(MIXIN_CREATE, true);
+    }
+
+    public static boolean mixinCreateAddition() {
+        return loaded(MIXIN_CREATEADDITION, true);
+    }
+
+    public static boolean mixinSliceAndDice() {
+        return loaded(MIXIN_SLICEANDDICE, true);
+    }
+
+    public static boolean mixinCreateEnchantmentIndustry() {
+        return loaded(MIXIN_CREATE_ENCHANTMENT_INDUSTRY, true);
+    }
+
+    public static boolean mixinCreateNewAge() {
+        return loaded(MIXIN_CREATE_NEW_AGE, true);
     }
 
     public static boolean mixinEnderio() {
