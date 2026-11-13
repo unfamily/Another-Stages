@@ -27,60 +27,74 @@ public final class AsConfig {
 
     public static final ModConfigSpec.BooleanValue MIXIN_CRAFTING = BUILDER
             .comment("Gate vanilla CraftingMenu recipe selection.")
+            .gameRestart()
             .define("crafting", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_FURNACE = BUILDER
             .comment("Gate vanilla AbstractFurnaceBlockEntity (skipped when FastFurnace is loaded).")
+            .gameRestart()
             .define("furnace", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_STONECUTTER = BUILDER
             .comment("Gate StonecutterMenu results.")
+            .gameRestart()
             .define("stonecutter", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_SMITHING = BUILDER
             .comment("Gate SmithingMenu results.")
+            .gameRestart()
             .define("smithing", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CRAFTER = BUILDER
             .comment("Gate CrafterBlock recipe selection.")
+            .gameRestart()
             .define("crafter", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CAMPFIRE = BUILDER
             .comment("Gate CampfireBlockEntity cooking.")
+            .gameRestart()
             .define("campfire", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_RECIPE_BOOK_PLACE = BUILDER
             .comment("Gate ServerPlaceRecipe (recipe book click-to-place).")
+            .gameRestart()
             .define("recipe_book_place", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_FASTBENCH = BUILDER
             .comment("Gate FastWorkbench FastBenchUtil hooks.")
+            .gameRestart()
             .define("fastbench", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_FASTFURNACE = BUILDER
             .comment("Gate FastFurnace getRecipe cache.")
+            .gameRestart()
             .define("fastfurnace", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_POLYMORPH = BUILDER
             .comment("Filter stage-locked recipes from Polymorph / Polymorph+ conflict candidates / selectRecipe.")
+            .gameRestart()
             .define("polymorph", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_BLOCK_APPEARANCE = BUILDER
             .comment("Client mimic appearance for stage_block.")
+            .gameRestart()
             .define("block_appearance", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_BLOCK_STOP_TICK = BUILDER
             .comment(
                     "DANGEROUS: honor stage_block stop_tick (skip BE / scheduled / random ticks).",
                     "Disable if a compat crash occurs. Default true; stop_tick itself defaults false per rule.")
+            .gameRestart()
             .define("block_stop_tick", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_GUI_SLOTS = BUILDER
             .comment("Gate AbstractContainerMenu.clicked for stage_gui blocked slots/items.")
+            .gameRestart()
             .define("gui_slots", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_IRONFURNACES = BUILDER
             .comment("Gate Iron Furnaces cook start (getRecipeNonCached); insert remains allowed.")
+            .gameRestart()
             .define("ironfurnaces", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_AE2 = BUILDER
@@ -88,50 +102,62 @@ public final class AsConfig {
                     "Gate Applied Energistics 2 path coverage: pattern encode, autocraft submit,",
                     "Molecular Assembler push, Crafting Terminal, Inscriber/Charger process, in-world transform.",
                     "ExtendedAE/AdvancedAE share AE2 encode/submit when on the same grid.")
+            .gameRestart()
             .define("ae2", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_REFINEDSTORAGE = BUILDER
             .comment("Gate Refined Storage 2 autocraft / crafting grid path coverage.")
+            .gameRestart()
             .define("refinedstorage", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_TOMS_STORAGE = BUILDER
             .comment("Gate Tom's Simple Storage crafting terminal path coverage.")
+            .gameRestart()
             .define("toms_storage", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_SOPHISTICATED = BUILDER
             .comment("Gate Sophisticated Backpacks/Storage crafting (and related) path coverage.")
+            .gameRestart()
             .define("sophisticated", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CREATE = BUILDER
             .comment("Gate Create Mechanical Crafter path coverage (when Create is present).")
+            .gameRestart()
             .define("create", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_ENDERIO = BUILDER
             .comment("Gate Ender IO Crafter path coverage.")
+            .gameRestart()
             .define("enderio", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_ENERGIZEDPOWER = BUILDER
             .comment("Gate Energized Power auto crafter / stonecutter / powered furnaces / alloy / induction.")
+            .gameRestart()
             .define("energizedpower", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_FTBIC = BUILDER
             .comment("Gate FTB Industrial Contraptions powered furnace path coverage.")
+            .gameRestart()
             .define("ftbic", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CRAFTINGSTATION = BUILDER
             .comment("Gate Crafting Station menu path coverage.")
+            .gameRestart()
             .define("craftingstation", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_MEKANISM = BUILDER
             .comment("Gate Mekanism Formulaic Assemblicator / QIO crafting path coverage.")
+            .gameRestart()
             .define("mekanism", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_INTEGRATEDDYNAMICS = BUILDER
             .comment("Gate Integrated Dynamics / Crafting path coverage.")
+            .gameRestart()
             .define("integrateddynamics", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_FORESTRY = BUILDER
             .comment("Gate Forestry CE Worktable path coverage.")
+            .gameRestart()
             .define("forestry", true);
 
     static {

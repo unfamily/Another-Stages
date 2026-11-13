@@ -224,20 +224,37 @@ public final class RsCraftGate {
         return ServerLifecycleHooks.getCurrentServer();
     }
 
+    /** RS toast for autocraft / craft-grid stage blocks (no action-bar). */
     public static void notifyBlocked(@Nullable Player player, @Nullable Identifier recipeId) {
+        notify(player, recipeId, "another_stages.rs.craft_blocked", "another_stages.rs.craft_blocked_recipe", false);
+    }
+
+    /** Toast for pattern-grid encode stage blocks. */
+    public static void notifyEncodeBlocked(@Nullable Player player, @Nullable Identifier recipeId) {
+        notify(player, recipeId, "another_stages.rs.encode_blocked", "another_stages.rs.encode_blocked_recipe", true);
+    }
+
+    private static void notify(
+            @Nullable Player player,
+            @Nullable Identifier recipeId,
+            String plainKey,
+            String recipeKey,
+            boolean actionBar) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
         Component title = Component.translatable("another_stages.rs.craft_blocked.title");
         Component body = recipeId == null
-                ? Component.translatable("another_stages.rs.craft_blocked")
-                : Component.translatable("another_stages.rs.craft_blocked_recipe", recipeId.toString());
+                ? Component.translatable(plainKey)
+                : Component.translatable(recipeKey, recipeId.toString());
         try {
             S2CPackets.sendMessage(serverPlayer, title, body);
         } catch (Throwable ignored) {
-            // RS packet path unavailable — fall through to action-bar
+            // RS packet path unavailable
         }
-        serverPlayer.sendSystemMessage(body, true);
+        if (actionBar) {
+            serverPlayer.sendSystemMessage(body, true);
+        }
     }
 
     private static ItemStack firstItem(List<? extends com.refinedmods.refinedstorage.api.resource.ResourceKey> inputs) {

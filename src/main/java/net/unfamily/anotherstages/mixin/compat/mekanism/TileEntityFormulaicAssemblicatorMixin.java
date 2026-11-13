@@ -15,7 +15,10 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.UUID;
 
-/** Mekanism Formulaic Assemblicator: block craft start when formula recipe is stage-locked for owner. */
+/**
+ * Mekanism Formulaic Assemblicator: block craft start when formula recipe is stage-locked.
+ * Only shadows {@code formula} (declared on target) — no parent {@code @Shadow} (breaks apply).
+ */
 @Mixin(value = TileEntityFormulaicAssemblicator.class, remap = false)
 public abstract class TileEntityFormulaicAssemblicatorMixin {
     @Shadow(remap = false)

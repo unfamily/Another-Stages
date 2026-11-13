@@ -156,9 +156,18 @@ dependencies {
     }
 
     // Required: Another Config Manager (local build preferred)
-    def acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0.jar')
+    def acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.1.0.0.0.jar')
+    if (!acmJar.exists()) {
+        acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.1.0.0.0-neoforge-26.1.2.jar')
+    }
+    if (!acmJar.exists()) {
+        acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0.jar')
+    }
     if (!acmJar.exists()) {
         acmJar = file('../AnotherConfigManager-26.1.2/build/libs/another_config_manager-1.0.0.0.0-neoforge-26.1.2.jar')
+    }
+    if (!acmJar.exists()) {
+        acmJar = file('libs/another_config_manager-1.1.0.0.0.jar')
     }
     if (!acmJar.exists()) {
         acmJar = file('libs/another_config_manager-1.0.0.0.0.jar')

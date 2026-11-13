@@ -202,7 +202,11 @@ public final class StageRecipeRvHelper {
             // FTBIC adapted cooking keeps vanilla smelting ids on MachineRecipe wrappers —
             // resolve the vanilla cooking holder so recipe_types / I/O match JEI locks.
             RecipeHolder<?> vanilla = resolveVanillaCookingIfAdapted(holder);
-            return vanilla != null ? vanilla : holder;
+            if (vanilla != null) {
+                return vanilla;
+            }
+            // Ender IO Alloy: keep remapped enderio:smelting/... holder as-is for RV (dual-id in handler).
+            return holder;
         }
         if (recipeId == null) {
             return null;
