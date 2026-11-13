@@ -86,7 +86,7 @@ public abstract class PatternGridBlockEntityMixin {
         if (RecipeStageGate.isBlockedForOwner(holder.id(), owner, self.getLevel())) {
             ResourceLocation id = holder.id();
             Player player = RsCraftSubjects.currentPlayer();
-            RsCraftGate.notifyBlocked(player, id);
+            RsCraftGate.notifyEncodeBlocked(player, id);
             return;
         }
         original.call();

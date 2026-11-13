@@ -196,7 +196,7 @@
   "another_stages.ae2.craft_blocked_recipe": "Stage lock: %s",
   "another_stages.rs.craft_blocked.title": "Refined Storage",
   "another_stages.rs.craft_blocked": "Autocraft blocked by a stage lock",
-  "another_stages.rs.craft_blocked_recipe": "Cannot encode/craft — stage lock: %s",
+  "another_stages.rs.craft_blocked_recipe": "Cannot craft — stage lock: %s",
   "another_stages.rs.encode_blocked": "Cannot encode pattern — stage lock",
   "another_stages.rs.encode_blocked_recipe": "Cannot encode pattern — stage lock: %s"
 }

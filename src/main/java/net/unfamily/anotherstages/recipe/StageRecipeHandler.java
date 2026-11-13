@@ -12,6 +12,8 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.compat.enderio.EnderIoRecipeIds;
+import net.unfamily.anotherstages.compat.mekanism.MekRecipeIds;
 import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -294,7 +297,7 @@ public final class StageRecipeHandler {
         List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, recipeView);
         String recipeIdStr = recipeId.toString();
         for (StageRecipeRule rule : candidates) {
-            if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
+            if (excludedByAnyId(rule, recipeId, holder)) {
                 continue;
             }
             if (!matchersPass(rule, holder, recipeIdStr, recipeView)) {
@@ -410,7 +413,7 @@ public final class StageRecipeHandler {
         }
         String recipeIdStr = recipeId.toString();
         for (StageRecipeRule rule : candidates) {
-            if (StageIdMatchers.idInList(recipeIdStr, rule.excludeRecipes)) {
+            if (excludedByAnyId(rule, recipeId, holder)) {
                 continue;
             }
             if (!matchersPass(rule, holder, recipeIdStr, null, level)) {
@@ -455,9 +458,51 @@ public final class StageRecipeHandler {
     }
 
     /** Holder-less JEI wrapper path (Utils Ancient Tablet / Factory, etc.). */
+    private static boolean excludedByAnyId(
+            StageRecipeRule rule, ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
+        if (rule.excludeRecipes.isEmpty()) {
+            return false;
+        }
+        for (ResourceLocation id : dualMatchIds(recipeId, holder)) {
+            if (StageIdMatchers.idInList(id.toString(), rule.excludeRecipes)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean recipesMatcherHits(
+            StageRecipeRule rule,
+            ResourceLocation recipeId,
+            @Nullable RecipeHolder<?> holder,
+            String recipeIdStr) {
+        if (rule.recipes.isEmpty()) {
+            return true;
+        }
+        if (StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
+            return true;
+        }
+        for (ResourceLocation id : dualMatchIds(recipeId, holder)) {
+            if (StageIdMatchers.idInList(id.toString(), rule.recipes)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<ResourceLocation> dualMatchIds(
+            @Nullable ResourceLocation recipeId, @Nullable RecipeHolder<?> holder) {
+        LinkedHashSet<ResourceLocation> out =
+                new LinkedHashSet<>(EnderIoRecipeIds.matchIds(recipeId, holder));
+        out.addAll(MekRecipeIds.matchIds(recipeId, holder));
+        return new ArrayList<>(out);
+    }
+
     private static boolean matchesIoWrapper(
             StageRecipeRule rule, String recipeIdStr, @Nullable Object recipeView) {
-        if (!rule.recipes.isEmpty() && !StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
+        ResourceLocation recipeId = ResourceLocation.tryParse(recipeIdStr);
+        if (!rule.recipes.isEmpty()
+                && (recipeId == null || !recipesMatcherHits(rule, recipeId, null, recipeIdStr))) {
             return false;
         }
         if (!rule.recipeTypes.isEmpty()) {
@@ -483,7 +528,13 @@ public final class StageRecipeHandler {
     private static List<StageRecipeRule> collectCandidates(
             ResourceLocation recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
         List<StageRecipeRule> out = new ArrayList<>();
-        out.addAll(BY_RECIPE_ID.getOrDefault(recipeId, Collections.emptyList()));
+        for (ResourceLocation id : dualMatchIds(recipeId, holder)) {
+            for (StageRecipeRule rule : BY_RECIPE_ID.getOrDefault(id, Collections.emptyList())) {
+                if (!out.contains(rule)) {
+                    out.add(rule);
+                }
+            }
+        }
         if (holder != null) {
             ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
             if (typeId != null) {
@@ -493,6 +544,19 @@ public final class StageRecipeHandler {
             ResourceLocation wrapperType = JeiWrapperIoProbe.inferredRecipeType(recipeView);
             if (wrapperType != null) {
                 out.addAll(BY_RECIPE_TYPE.getOrDefault(wrapperType, Collections.emptyList()));
+            }
+        }
+        // EIO remapped/wrapped + Mek synthetic WrappedSmelter live under non-vanilla types —
+        // also pull minecraft:smelting (or blasting/smoking) type-index rules.
+        ResourceLocation cookingType = EnderIoRecipeIds.vanillaCookingTypeFor(recipeId, holder);
+        if (cookingType == null) {
+            cookingType = MekRecipeIds.vanillaCookingTypeFor(recipeId, holder);
+        }
+        if (cookingType != null) {
+            for (StageRecipeRule rule : BY_RECIPE_TYPE.getOrDefault(cookingType, Collections.emptyList())) {
+                if (!out.contains(rule)) {
+                    out.add(rule);
+                }
             }
         }
         for (StageRecipeRule io : IO_RULES) {
@@ -516,14 +580,15 @@ public final class StageRecipeHandler {
     private static boolean matchesIo(
             StageRecipeRule rule, RecipeHolder<?> holder, String recipeIdStr, @Nullable Level level) {
         Recipe<?> recipe = holder.value();
-        if (!rule.recipes.isEmpty() && !StageIdMatchers.idInList(recipeIdStr, rule.recipes)) {
+        ResourceLocation recipeId = ResourceLocation.tryParse(recipeIdStr);
+        if (recipeId == null) {
+            recipeId = holder.id();
+        }
+        if (!rule.recipes.isEmpty() && !recipesMatcherHits(rule, recipeId, holder, recipeIdStr)) {
             return false;
         }
-        if (!rule.recipeTypes.isEmpty()) {
-            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType());
-            if (typeId == null || !StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
-                return false;
-            }
+        if (!rule.recipeTypes.isEmpty() && !recipeTypeMatcherHits(rule, holder, recipeId)) {
+            return false;
         }
         if (!rule.outputs.isEmpty() && !RecipeIoProbe.outputsMatch(recipe, rule.outputs, level)) {
             return false;
@@ -532,6 +597,28 @@ public final class StageRecipeHandler {
             return false;
         }
         return true;
+    }
+
+    private static boolean recipeTypeMatcherHits(
+            StageRecipeRule rule, RecipeHolder<?> holder, ResourceLocation recipeId) {
+        ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
+        if (typeId != null && StageIdMatchers.idInList(typeId.toString(), rule.recipeTypes)) {
+            return true;
+        }
+        if (EnderIoRecipeIds.isRemappedCookingId(recipeId) || EnderIoRecipeIds.isWrappedAlloyRecipe(holder)) {
+            String path = recipeId != null ? recipeId.getPath() : "";
+            if (path.startsWith("blasting/")) {
+                return StageIdMatchers.idInList("minecraft:blasting", rule.recipeTypes);
+            }
+            if (path.startsWith("smoking/")) {
+                return StageIdMatchers.idInList("minecraft:smoking", rule.recipeTypes);
+            }
+            return StageIdMatchers.idInList("minecraft:smelting", rule.recipeTypes);
+        }
+        if (MekRecipeIds.isSyntheticSmeltingId(recipeId) || MekRecipeIds.isWrappedSmelterRecipe(holder)) {
+            return StageIdMatchers.idInList("minecraft:smelting", rule.recipeTypes);
+        }
+        return false;
     }
     private static boolean ruleApplies(
             StageRecipeRule rule,

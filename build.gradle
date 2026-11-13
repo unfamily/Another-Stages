@@ -115,9 +115,18 @@ dependencies {
     }
 
     // Required: Another Config Manager (1.21.1)
-    def acmJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.0.0.0.0.jar')
+    def acmJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.1.0.0.0.jar')
+    if (!acmJar.exists()) {
+        acmJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.1.0.0.0-neoforge-1.21.1.jar')
+    }
+    if (!acmJar.exists()) {
+        acmJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.0.0.0.0.jar')
+    }
     if (!acmJar.exists()) {
         acmJar = file('../AnotherConfigManager/build/libs/another_config_manager-1.0.0.0.0-neoforge-1.21.1.jar')
+    }
+    if (!acmJar.exists()) {
+        acmJar = file('libs/another_config_manager-1.1.0.0.0.jar')
     }
     if (!acmJar.exists()) {
         acmJar = file('libs/another_config_manager-1.0.0.0.0.jar')
@@ -188,6 +197,8 @@ dependencies {
     localRuntime "curse.maven:sophisticated-backpacks-422301:${sophisticatedbackpacks_file_id}"
     compileOnly "curse.maven:sophisticated-storage-619320:${sophisticatedstorage_file_id}"
     localRuntime "curse.maven:sophisticated-storage-619320:${sophisticatedstorage_file_id}"
+    // Flat endercore (nested jarjar) so MachineTaskHostMixin can type EnderBlockEntity
+    compileOnly files('libs/enderio-flat')
     compileOnly "curse.maven:enderio-64578:${enderio_file_id}"
     localRuntime "curse.maven:enderio-64578:${enderio_file_id}"
     compileOnly "curse.maven:energized-power-782147:${energizedpower_file_id}"

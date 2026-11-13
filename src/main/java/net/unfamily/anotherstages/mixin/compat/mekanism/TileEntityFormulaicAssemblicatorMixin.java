@@ -7,7 +7,7 @@ import mekanism.common.tile.base.TileEntityMekanism;
 import mekanism.common.tile.machine.TileEntityFormulaicAssemblicator;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,14 +15,14 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.UUID;
 
-/** Mekanism Formulaic Assemblicator (1.21.1): block craft start when formula recipe is stage-locked. */
+/**
+ * Mekanism Formulaic Assemblicator (1.21.1): block craft start when formula recipe is stage-locked.
+ * Only shadows {@code formula} — no parent {@code @Shadow getLevel}/{@code getSecurity} (breaks apply).
+ */
 @Mixin(value = TileEntityFormulaicAssemblicator.class, remap = false)
 public abstract class TileEntityFormulaicAssemblicatorMixin {
     @Shadow(remap = false)
     public RecipeFormula formula;
-
-    @Shadow
-    public abstract Level getLevel();
 
     @WrapMethod(method = "doSingleCraft", remap = false)
     private boolean anotherStages$gateDoSingleCraft(Operation<Boolean> original) {
@@ -49,6 +49,7 @@ public abstract class TileEntityFormulaicAssemblicatorMixin {
             return false;
         }
         UUID owner = ((TileEntityMekanism) (Object) this).getOwnerUUID();
-        return RecipeStageGate.isBlockedForOwner(holder.id(), owner, getLevel());
+        return RecipeStageGate.isBlockedForOwner(
+                holder.id(), owner, ((BlockEntity) (Object) this).getLevel());
     }
 }

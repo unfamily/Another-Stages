@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.compat.create.CreateCrafterSubject;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;

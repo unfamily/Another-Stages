@@ -6,6 +6,7 @@ import com.simibubi.create.content.kinetics.crafter.MechanicalCrafterBlockEntity
 import com.simibubi.create.content.kinetics.crafter.RecipeGridHandler.GroupedItems;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.compat.create.CreateCrafterSubject;
 import net.unfamily.anotherstages.owner.MachineOwners;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
