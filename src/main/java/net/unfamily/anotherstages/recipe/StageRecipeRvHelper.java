@@ -52,22 +52,12 @@ public final class StageRecipeRvHelper {
             return Mode.NONE;
         }
         List<StageRecipeRule> active = StageRecipeHandler.findActiveRulesClient(recipeId, holder, recipeView);
-        Mode strongest = Mode.NONE;
-        for (StageRecipeRule rule : active) {
-            Mode mode = "hide".equals(StageRecipeHandler.rvMode(rule)) ? Mode.HIDE : Mode.OVERLAY;
-            if (rank(mode) > rank(strongest)) {
-                strongest = mode;
-            }
+        if (active.isEmpty()) {
+            return Mode.NONE;
         }
-        return strongest;
-    }
-
-    private static int rank(Mode mode) {
-        return switch (mode) {
-            case HIDE -> 2;
-            case OVERLAY -> 1;
-            case NONE -> 0;
-        };
+        // Highest priority wins (list already sorted desc); exclusive presentation.
+        StageRecipeRule primary = active.getFirst();
+        return "hide".equals(StageRecipeHandler.rvMode(primary)) ? Mode.HIDE : Mode.OVERLAY;
     }
 
     public static ResourceLocation lockTexture() {

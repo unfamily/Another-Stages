@@ -66,6 +66,8 @@ public final class RestrictionDraft {
     public int kubeEntryIndex = -1;
 
     public String stagesLogic = "AND";
+    /** Higher wins when several rules match; default {@code 0}. */
+    public int priority = 0;
     public final List<StageRow> stages = new ArrayList<>();
 
     public final List<String> matchers = new ArrayList<>();
@@ -211,6 +213,7 @@ public final class RestrictionDraft {
         root.addProperty("id", id);
         root.addProperty("kubeEntryIndex", kubeEntryIndex);
         root.addProperty("stagesLogic", stagesLogic);
+        root.addProperty("priority", priority);
         JsonArray stagesArr = new JsonArray();
         for (StageRow row : stages) {
             JsonObject o = new JsonObject();
@@ -272,6 +275,7 @@ public final class RestrictionDraft {
         d.id = str(root, "id", "");
         d.kubeEntryIndex = root.has("kubeEntryIndex") ? root.get("kubeEntryIndex").getAsInt() : -1;
         d.stagesLogic = str(root, "stagesLogic", "AND");
+        d.priority = root.has("priority") ? root.get("priority").getAsInt() : 0;
         if (root.has("stages") && root.get("stages").isJsonArray()) {
             for (JsonElement el : root.getAsJsonArray("stages")) {
                 JsonObject o = el.getAsJsonObject();

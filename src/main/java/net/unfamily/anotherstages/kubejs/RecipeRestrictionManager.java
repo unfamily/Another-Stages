@@ -36,6 +36,15 @@ public final class RecipeRestrictionManager {
             return this;
         }
 
+        /**
+         * Conflict resolution when several rules match the same recipe (JEI presentation).
+         * Higher value wins; default {@code 0}; ties keep registration order.
+         */
+        public RecipeRestrictBuilder priority(int priority) {
+            rule.priority = priority;
+            return this;
+        }
+
         public RecipeRestrictBuilder logicAnd() {
             rule.stagesLogic = "AND";
             return this;
@@ -144,6 +153,7 @@ public final class RecipeRestrictionManager {
         private String fingerprint() {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
+            parts.add("priority=" + rule.priority);
             parts.add(rule.recipeViewer);
             parts.add(rule.overlayCorner);
             parts.add(String.join(",", rule.recipes));

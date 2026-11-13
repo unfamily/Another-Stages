@@ -67,26 +67,14 @@ public final class StageItemRvHelper {
 
     public static Mode modeFor(Player player, Level level, Item item) {
         List<StageItemRule> active = StageItemHandler.findActiveRules(player, level, item);
-        Mode strongest = Mode.NONE;
-        for (StageItemRule rule : active) {
-            Mode mode = switch (StageItemHandler.rvMode(rule)) {
-                case "hide" -> Mode.HIDE;
-                case "hardcore" -> Mode.HARDCORE;
-                default -> Mode.OVERLAY;
-            };
-            if (rank(mode) > rank(strongest)) {
-                strongest = mode;
-            }
+        if (active.isEmpty()) {
+            return Mode.NONE;
         }
-        return strongest;
-    }
-
-    private static int rank(Mode mode) {
-        return switch (mode) {
-            case HIDE -> 3;
-            case HARDCORE -> 2;
-            case OVERLAY -> 1;
-            case NONE -> 0;
+        // Highest priority wins (list already sorted desc) for exclusive presentation.
+        return switch (StageItemHandler.rvMode(active.getFirst())) {
+            case "hide" -> Mode.HIDE;
+            case "hardcore" -> Mode.HARDCORE;
+            default -> Mode.OVERLAY;
         };
     }
 

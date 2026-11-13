@@ -123,6 +123,9 @@ public final class JsonExporter {
         JsonObject o = new JsonObject();
         o.addProperty("id", d.id);
         o.addProperty("stages_logic", RestrictionDraft.normalizeLogic(d.stagesLogic));
+        if (d.priority != 0) {
+            o.addProperty("priority", d.priority);
+        }
         JsonArray stages = new JsonArray();
         for (RestrictionDraft.StageRow row : d.stages) {
             JsonObject s = new JsonObject();

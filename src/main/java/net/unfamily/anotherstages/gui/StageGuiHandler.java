@@ -15,6 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.recipe.StageCondition;
+import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
@@ -162,6 +163,9 @@ public final class StageGuiHandler {
     private static StageGuiRule parseRule(JsonObject ruleObj) {
         StageGuiRule rule = new StageGuiRule();
         rule.stagesLogic = ruleObj.has("stages_logic") ? ruleObj.get("stages_logic").getAsString() : "AND";
+        if (ruleObj.has("priority") && ruleObj.get("priority").isJsonPrimitive()) {
+            rule.priority = ruleObj.get("priority").getAsInt();
+        }
         if (ruleObj.has("stages") && ruleObj.get("stages").isJsonArray()) {
             for (JsonElement stageElement : ruleObj.getAsJsonArray("stages")) {
                 if (!stageElement.isJsonObject()) {
@@ -230,6 +234,7 @@ public final class StageGuiHandler {
                 active.add(rule);
             }
         }
+        RestrictionPriority.sortByPriorityDesc(active, r -> r.priority);
         return active;
     }
 
