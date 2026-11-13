@@ -240,6 +240,11 @@ dependencies {
     localRuntime "curse.maven:enderio-64578:${enderio_file_id}"
     compileOnly "curse.maven:energized-power-782147:${energizedpower_file_id}"
     localRuntime "curse.maven:energized-power-782147:${energizedpower_file_id}"
+    compileOnly "curse.maven:ftb-industrial-contraptions-forge-539097:${ftbic_file_id}"
+    localRuntime "curse.maven:ftb-industrial-contraptions-forge-539097:${ftbic_file_id}"
+    // Mekanism version-locked jar (Formulaic Assemblicator + QIO craft gates)
+    compileOnly files('run/mods/Mekanism-Version-Locked-26.1.2-2.11.jar')
+    localRuntime files('run/mods/Mekanism-Version-Locked-26.1.2-2.11.jar')
     compileOnly "curse.maven:cyclops-core-232758:${cyclopscore_file_id}"
     localRuntime "curse.maven:cyclops-core-232758:${cyclopscore_file_id}"
     compileOnly "curse.maven:common-capabilities-247007:${commoncapabilities_file_id}"

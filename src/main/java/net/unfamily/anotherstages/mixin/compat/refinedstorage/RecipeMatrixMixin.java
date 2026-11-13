@@ -9,14 +9,18 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.compat.refinedstorage.RsCraftSubjects;
+import net.unfamily.anotherstages.compat.refinedstorage.RsMatrixOwners;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.util.UUID;
+
 /**
- * RS Crafting Grid / Pattern Grid matrices: clear result when the matched recipe is stage-locked.
- * Uses null owner so world stages still apply (player UUID is applied by menu craft paths separately).
+ * RS Crafting Grid / Pattern Grid matrices: clear result when the matched recipe is stage-locked
+ * for the interacting player (ThreadLocal) or the node placer UUID.
  */
 @Mixin(value = RecipeMatrix.class, remap = false)
 public abstract class RecipeMatrixMixin<T extends Recipe<I>, I extends RecipeInput> {
@@ -32,7 +36,13 @@ public abstract class RecipeMatrixMixin<T extends Recipe<I>, I extends RecipeInp
         if (!AsConfig.mixinRefinedStorage() || currentRecipe == null) {
             return;
         }
-        if (RecipeStageGate.isBlockedForOwner(currentRecipe.id(), null, level)) {
+        @SuppressWarnings("unchecked")
+        RecipeMatrix<T, I> self = (RecipeMatrix<T, I>) (Object) this;
+        UUID owner = RsCraftSubjects.currentUuid();
+        if (owner == null) {
+            owner = RsMatrixOwners.ownerOf(self);
+        }
+        if (RecipeStageGate.isBlockedForOwner(currentRecipe.id(), owner, level)) {
             currentRecipe = null;
             ResultContainer result = getResult();
             if (result != null) {

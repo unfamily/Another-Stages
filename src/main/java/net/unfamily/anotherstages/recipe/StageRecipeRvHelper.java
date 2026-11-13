@@ -199,7 +199,10 @@ public final class StageRecipeRvHelper {
     @Nullable
     public static RecipeHolder<?> asHolder(Object recipe, @Nullable Identifier recipeId) {
         if (recipe instanceof RecipeHolder<?> holder) {
-            return holder;
+            // FTBIC adapted cooking keeps vanilla smelting ids on MachineRecipe wrappers —
+            // resolve the vanilla cooking holder so recipe_types / I/O match JEI locks.
+            RecipeHolder<?> vanilla = resolveVanillaCookingIfAdapted(holder);
+            return vanilla != null ? vanilla : holder;
         }
         if (recipeId == null) {
             return null;
@@ -213,6 +216,36 @@ public final class StageRecipeRvHelper {
             }
         } catch (RuntimeException ignored) {
             // dedicated client / early init
+        }
+        return null;
+    }
+
+    /**
+     * When JEI shows an FTBIC {@code MachineRecipe} adapted from vanilla cooking, the holder id
+     * is the vanilla smelting/blasting/smoking id — prefer that holder for RV matching.
+     */
+    @Nullable
+    private static RecipeHolder<?> resolveVanillaCookingIfAdapted(RecipeHolder<?> holder) {
+        if (holder == null) {
+            return null;
+        }
+        Recipe<?> value = holder.value();
+        String className = value.getClass().getName();
+        if (!className.contains("ftbic") || !className.contains("MachineRecipe")) {
+            return null;
+        }
+        Identifier id = holder.id().identifier();
+        if (id == null || !"minecraft".equals(id.getNamespace())) {
+            return null;
+        }
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.getSingleplayerServer() != null) {
+                ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, id);
+                return mc.getSingleplayerServer().getRecipeManager().byKey(key).orElse(null);
+            }
+        } catch (RuntimeException ignored) {
+            // dedicated client / early init — id-only matching still works via BY_RECIPE_ID
         }
         return null;
     }

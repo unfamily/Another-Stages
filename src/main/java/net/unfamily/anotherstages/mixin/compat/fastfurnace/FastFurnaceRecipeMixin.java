@@ -13,13 +13,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 /**
- * FastFurnace merges {@code getRecipe(ServerLevel)} onto {@link AbstractFurnaceBlockEntity}
- * and redirects {@code serverTick} / {@code getTotalCookTime} through it. Wrap that merged
- * method (not FastFurnace's mixin class) so stage-locked cooks never start.
+ * FastFurnace (26.x): merges {@code getRecipe(ServerLevel)} onto {@link AbstractFurnaceBlockEntity}.
+ * Wrap that method so stage-locked cooks never start; clear {@code curRecipe} so unlock re-checks.
  */
 @Mixin(value = AbstractFurnaceBlockEntity.class, priority = 1100)
 public abstract class FastFurnaceRecipeMixin {
-    /** FastFurnace {@code @Unique} field merged onto the furnace BE. */
     @Shadow(remap = false)
     protected RecipeHolder<?> curRecipe;
 
@@ -41,8 +39,6 @@ public abstract class FastFurnaceRecipeMixin {
         if (!blocked) {
             return holder;
         }
-        // Do not sticky-poison failedMatch: stage unlock must re-evaluate next tick without
-        // requiring the input stack to change.
         this.curRecipe = null;
         return null;
     }

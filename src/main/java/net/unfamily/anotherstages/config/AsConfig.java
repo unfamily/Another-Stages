@@ -111,8 +111,12 @@ public final class AsConfig {
             .define("enderio", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_ENERGIZEDPOWER = BUILDER
-            .comment("Gate Energized Power auto crafter / stonecutter / smithing path coverage.")
+            .comment("Gate Energized Power auto crafter / stonecutter / powered furnaces / alloy / induction.")
             .define("energizedpower", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_FTBIC = BUILDER
+            .comment("Gate FTB Industrial Contraptions powered furnace path coverage.")
+            .define("ftbic", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CRAFTINGSTATION = BUILDER
             .comment("Gate Crafting Station menu path coverage.")
@@ -285,6 +289,10 @@ public final class AsConfig {
 
     public static boolean mixinEnergizedPower() {
         return loaded(MIXIN_ENERGIZEDPOWER, true);
+    }
+
+    public static boolean mixinFtbic() {
+        return loaded(MIXIN_FTBIC, true);
     }
 
     public static boolean mixinCraftingStation() {

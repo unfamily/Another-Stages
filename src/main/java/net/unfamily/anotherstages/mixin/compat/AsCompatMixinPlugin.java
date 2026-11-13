@@ -69,6 +69,9 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
         if (lower.contains("mekanism")) {
             return isLoaded("mekanism");
         }
+        if (lower.contains("ftbic") || lower.contains(".ftbic.")) {
+            return isLoaded("ftbic");
+        }
         if (lower.contains("integrateddynamics") || lower.contains("integratedcrafting")) {
             return isLoaded("integrateddynamics") || isLoaded("integratedcrafting");
         }
