@@ -2,8 +2,8 @@ package net.unfamily.anotherstages.mixin.compat.fastfurnace;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.unfamily.anotherstages.AnotherStages;
@@ -13,26 +13,22 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 /**
- * FastFurnace merges {@code getRecipe(ServerLevel)} onto {@link AbstractFurnaceBlockEntity}
- * and redirects {@code serverTick} / {@code getTotalCookTime} through it. Wrap that merged
- * method (not FastFurnace's mixin class) so stage-locked cooks never start.
+ * FastFurnace (1.21.1): merges {@code getRecipe()} (no ServerLevel) onto the furnace BE.
+ * Previous WrapMethod targeted getRecipe(ServerLevel) and never applied — cook gates were dead.
  */
 @Mixin(value = AbstractFurnaceBlockEntity.class, priority = 1100)
 public abstract class FastFurnaceRecipeMixin {
-    /** FastFurnace {@code @Unique} field merged onto the furnace BE. */
     @Shadow(remap = false)
     protected RecipeHolder<?> curRecipe;
 
-    @WrapMethod(
-            method = "getRecipe(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/world/item/crafting/RecipeHolder;",
-            remap = false)
-    private RecipeHolder<?> anotherStages$gateFurnaceRecipe(
-            ServerLevel level, Operation<RecipeHolder<?>> original) {
-        RecipeHolder<?> holder = original.call(level);
+    @WrapMethod(method = "getRecipe()Lnet/minecraft/world/item/crafting/RecipeHolder;", remap = false)
+    private RecipeHolder<?> anotherStages$gateFurnaceRecipe(Operation<RecipeHolder<?>> original) {
+        RecipeHolder<?> holder = original.call();
         if (!AsConfig.mixinFastfurnace() || holder == null) {
             return holder;
         }
         BlockEntity be = (BlockEntity) (Object) this;
+        Level level = be.getLevel();
         boolean blocked = RecipeStageGate.isBlockedForMachine(holder.id(), be, level);
         if (AsConfig.loggingEnabled()) {
             AnotherStages.LOGGER.info(
@@ -41,8 +37,6 @@ public abstract class FastFurnaceRecipeMixin {
         if (!blocked) {
             return holder;
         }
-        // Do not sticky-poison failedMatch: stage unlock must re-evaluate next tick without
-        // requiring the input stack to change.
         this.curRecipe = null;
         return null;
     }

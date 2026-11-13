@@ -263,11 +263,9 @@ dependencies {
     compileOnly "curse.maven:jade-324717:${jade_file_id}"
     localRuntime "curse.maven:jade-324717:${jade_file_id}"
 
-    // Mekanism core (creative cubes / chemical machines for recipe-lock smoke)
-    if (project.hasProperty('runtime_mekanism') && project.runtime_mekanism.toString() == 'true') {
-        compileOnly "curse.maven:mekanism-268560:${mekanism_file_id}"
-        localRuntime "curse.maven:mekanism-268560:${mekanism_file_id}"
-    }
+    // Mekanism (Formulaic Assemblicator + QIO craft gates) — always as runtime dep when jar resolves
+    compileOnly "curse.maven:mekanism-268560:${mekanism_file_id}"
+    localRuntime "curse.maven:mekanism-268560:${mekanism_file_id}"
 
     // KubeJS (CurseMaven; API may also resolve from Latvian)
     compileOnly "curse.maven:kubejs-238086:${kubejs_file_id}"

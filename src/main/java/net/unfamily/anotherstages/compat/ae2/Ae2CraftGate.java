@@ -7,7 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.unfamily.anotherstages.config.AsConfig;
+import net.unfamily.anotherstages.network.Ae2CraftBlockedS2CPayload;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,13 +51,25 @@ public final class Ae2CraftGate {
         return isRecipeBlocked(Ae2PatternRecipes.vanillaRecipeId(pattern), owner, level);
     }
 
-    public static void notifyBlocked(@Nullable Player player, @Nullable ResourceLocation recipeId) {
+    /**
+     * @param actionBar when false (submit → CraftErrorScreen), only S2C flag; when true (encode), action-bar tip
+     */
+    public static void notifyBlocked(@Nullable Player player, @Nullable ResourceLocation recipeId, boolean actionBar) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return;
         }
-        Component msg = recipeId == null
-                ? Component.translatable("another_stages.ae2.craft_blocked")
-                : Component.translatable("another_stages.ae2.craft_blocked_recipe", recipeId.toString());
-        serverPlayer.sendSystemMessage(msg, true);
+        PacketDistributor.sendToPlayer(
+                serverPlayer,
+                new Ae2CraftBlockedS2CPayload(recipeId == null ? "" : recipeId.toString()));
+        if (actionBar) {
+            Component msg = recipeId == null
+                    ? Component.translatable("another_stages.ae2.craft_blocked")
+                    : Component.translatable("another_stages.ae2.craft_blocked_recipe", recipeId.toString());
+            serverPlayer.sendSystemMessage(msg, true);
+        }
+    }
+
+    public static void notifyBlocked(@Nullable Player player, @Nullable ResourceLocation recipeId) {
+        notifyBlocked(player, recipeId, true);
     }
 }

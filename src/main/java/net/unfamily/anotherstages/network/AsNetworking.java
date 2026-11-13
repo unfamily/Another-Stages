@@ -43,6 +43,11 @@ public final class AsNetworking {
                 )
         );
         registrar.playToClient(
+                Ae2CraftBlockedS2CPayload.TYPE,
+                Ae2CraftBlockedS2CPayload.STREAM_CODEC,
+                (payload, context) -> context.enqueueWork(() -> Ae2CraftBlockedS2CPayload.handle(payload))
+        );
+        registrar.playToClient(
                 StageGenPathInfoPayload.TYPE,
                 StageGenPathInfoPayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(

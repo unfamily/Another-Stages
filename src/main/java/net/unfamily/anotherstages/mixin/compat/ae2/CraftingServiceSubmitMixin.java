@@ -41,7 +41,7 @@ public abstract class CraftingServiceSubmitMixin {
             UUID owner = Ae2NetworkOwners.fromActionSource(src, grid != null ? grid.getPivot() : null);
             if (Ae2CraftGate.isPlanBlocked(job, owner, level)) {
                 Player player = src != null ? src.player().orElse(null) : null;
-                Ae2CraftGate.notifyBlocked(player, (net.minecraft.resources.ResourceLocation) null);
+                Ae2CraftGate.notifyBlocked(player, (net.minecraft.resources.ResourceLocation) null, false);
                 return CraftingSubmitResult.INCOMPLETE_PLAN;
             }
         }

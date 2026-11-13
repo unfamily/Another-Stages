@@ -3,11 +3,13 @@ package net.unfamily.anotherstages.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.anotherstages.AnotherStages;
 import net.unfamily.anotherstages.config.AsConfig;
 import net.unfamily.anotherstages.recipe.RecipeStageGate;
@@ -19,14 +21,14 @@ import java.util.Optional;
 /**
  * Vanilla furnace family (no FastFurnace): prevent stage-locked cooking from starting.
  * When FastFurnace is present this mixin is skipped; see FastFurnaceRecipeMixin.
- * <p>
- * Passes the furnace BE so {@link net.unfamily.anotherstages.owner.MachineOwners} applies when
- * claimed. No owner is still normal — world-stage rules apply; player-scoped rules stay fail-closed.
  */
 @Mixin(AbstractFurnaceBlockEntity.class)
 public abstract class AbstractFurnaceBlockEntityMixin {
     @WrapOperation(
-            method = {"serverTick", "getTotalCookTime"},
+            method = {
+                    "serverTick(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity;)V",
+                    "getTotalCookTime(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/block/entity/AbstractFurnaceBlockEntity;)I"
+            },
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/item/crafting/RecipeManager$CachedCheck;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;"))
