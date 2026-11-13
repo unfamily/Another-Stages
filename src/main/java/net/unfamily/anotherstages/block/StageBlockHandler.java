@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.unfamily.anotherstages.client.ClientStageCache;
 import net.unfamily.anotherstages.recipe.StageCondition;
+import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
@@ -151,6 +152,9 @@ public final class StageBlockHandler {
     private static StageBlockRule parse(JsonObject obj) {
         StageBlockRule rule = new StageBlockRule();
         rule.stagesLogic = obj.has("stages_logic") ? obj.get("stages_logic").getAsString() : "AND";
+        if (obj.has("priority") && obj.get("priority").isJsonPrimitive()) {
+            rule.priority = obj.get("priority").getAsInt();
+        }
         if (obj.has("stages") && obj.get("stages").isJsonArray()) {
             for (JsonElement stageElement : obj.getAsJsonArray("stages")) {
                 if (!stageElement.isJsonObject()) {
@@ -271,15 +275,16 @@ public final class StageBlockHandler {
                 candidates.add(rule);
             }
         }
+        List<StageBlockRule> active = new ArrayList<>();
         for (StageBlockRule rule : candidates) {
             if (matchesBlock(state.getBlock(), rule.exclude)) {
                 continue;
             }
             if (stagesApply(rule, player, level)) {
-                return rule;
+                active.add(rule);
             }
         }
-        return null;
+        return RestrictionPriority.pickHighest(active, r -> r.priority);
     }
 
     private static boolean matchesBlock(Block block, List<String> list) {

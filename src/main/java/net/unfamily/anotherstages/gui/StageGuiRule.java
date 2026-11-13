@@ -13,6 +13,11 @@ public final class StageGuiRule {
 
     public String stagesLogic = "AND";
     public List<StageCondition> stages = new ArrayList<>();
+    /**
+     * When several rules match the same menu, higher {@code priority} wins for exclusive
+     * fields (message). Default {@code 0}. Ties keep load order.
+     */
+    public int priority = 0;
     /** FQCN of {@link net.minecraft.world.inventory.AbstractContainerMenu}. */
     public List<String> menus = new ArrayList<>();
     /** Registry ids of {@link net.minecraft.world.inventory.MenuType}. */

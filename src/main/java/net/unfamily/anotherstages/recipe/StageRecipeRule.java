@@ -9,6 +9,12 @@ import java.util.List;
 public final class StageRecipeRule {
     public String stagesLogic = "AND";
     public List<StageCondition> stages = new ArrayList<>();
+    /**
+     * When several rules match the same recipe, higher {@code priority} wins for exclusive
+     * presentation (JEI mode / corner). Default {@code 0}. Ties keep load order.
+     * Craft lock still applies if any stage-active rule matches.
+     */
+    public int priority = 0;
     public List<String> recipes = new ArrayList<>();
     public List<String> recipeTypes = new ArrayList<>();
     public List<String> outputs = new ArrayList<>();

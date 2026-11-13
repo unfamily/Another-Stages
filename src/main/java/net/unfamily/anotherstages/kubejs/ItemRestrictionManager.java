@@ -36,6 +36,15 @@ public final class ItemRestrictionManager {
             return this;
         }
 
+        /**
+         * Conflict resolution when several rules match the same item.
+         * Higher value wins for exclusive presentation; default {@code 0}; ties keep registration order.
+         */
+        public ItemRestrictBuilder priority(int priority) {
+            rule.priority = priority;
+            return this;
+        }
+
         public ItemRestrictBuilder logicAnd() {
             rule.stagesLogic = "AND";
             return this;
@@ -312,6 +321,7 @@ public final class ItemRestrictionManager {
         private String fingerprint() {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
+            parts.add("priority=" + rule.priority);
             parts.add(rule.consequence);
             parts.add(rule.recipeViewer);
             parts.add(String.valueOf(rule.hideItemName));

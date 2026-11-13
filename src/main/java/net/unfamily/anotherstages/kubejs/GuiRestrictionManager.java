@@ -36,6 +36,15 @@ public final class GuiRestrictionManager {
             return this;
         }
 
+        /**
+         * Conflict resolution when several rules match the same menu.
+         * Higher value wins for exclusive fields (message); default {@code 0}; ties keep registration order.
+         */
+        public GuiRestrictBuilder priority(int priority) {
+            rule.priority = priority;
+            return this;
+        }
+
         public GuiRestrictBuilder logicAnd() {
             rule.stagesLogic = "AND";
             return this;
@@ -125,6 +134,7 @@ public final class GuiRestrictionManager {
         private String fingerprint() {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
+            parts.add("priority=" + rule.priority);
             parts.add(String.valueOf(rule.blockOpen));
             parts.add(String.valueOf(rule.maxSlots));
             parts.add(rule.message);

@@ -36,6 +36,15 @@ public final class BlockRestrictionManager {
             return this;
         }
 
+        /**
+         * Conflict resolution when several rules match the same block.
+         * Higher value wins; default {@code 0}; ties keep registration order.
+         */
+        public BlockRestrictBuilder priority(int priority) {
+            rule.priority = priority;
+            return this;
+        }
+
         public BlockRestrictBuilder logicAnd() {
             rule.stagesLogic = "AND";
             return this;
@@ -188,6 +197,7 @@ public final class BlockRestrictionManager {
         private String fingerprint() {
             List<String> parts = new ArrayList<>();
             parts.add(rule.stagesLogic);
+            parts.add("priority=" + rule.priority);
             parts.add(rule.mimic);
             parts.add(String.valueOf(rule.camouflage));
             parts.add(String.valueOf(rule.unbreakable));

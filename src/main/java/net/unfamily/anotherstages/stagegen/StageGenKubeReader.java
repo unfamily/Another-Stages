@@ -133,6 +133,11 @@ public final class StageGenKubeReader {
             d.stagesLogic = "AND";
         }
 
+        Matcher priority = Pattern.compile("\\.priority\\s*\\(\\s*(-?\\d+)\\s*\\)").matcher(body);
+        if (priority.find()) {
+            d.priority = Integer.parseInt(priority.group(1));
+        }
+
         Matcher stagesBlock = Pattern.compile("\\.stages\\s*\\(\\s*\\[([\\s\\S]*?)]\\s*\\)").matcher(body);
         if (stagesBlock.find()) {
             Matcher stageObj = STAGE_OBJ.matcher(stagesBlock.group(1));

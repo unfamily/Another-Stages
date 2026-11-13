@@ -15,6 +15,11 @@ public final class StageBlockRule {
 
     public String stagesLogic = "AND";
     public List<StageCondition> stages = new ArrayList<>();
+    /**
+     * When several rules match the same block, higher {@code priority} wins (default {@code 0}).
+     * Ties keep load / registration order.
+     */
+    public int priority = 0;
     public List<String> blocks = new ArrayList<>();
     public List<String> exclude = new ArrayList<>();
     /** Replacement block id used for loot (always) and client camouflage when {@link #camouflage} is true. */

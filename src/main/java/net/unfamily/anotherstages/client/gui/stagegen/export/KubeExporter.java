@@ -46,6 +46,9 @@ public final class KubeExporter {
     public static String exportEntryBody(RestrictionDraft d) {
         StringBuilder sb = new StringBuilder();
         sb.append("  event.").append(manager(d.category)).append(".restrict()\n");
+        if (d.priority != 0) {
+            sb.append("    .priority(").append(d.priority).append(")\n");
+        }
         sb.append("    .").append(logicMethod(d.stagesLogic)).append("()\n");
         sb.append("    .stages([\n");
         for (RestrictionDraft.StageRow row : d.stages) {

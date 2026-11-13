@@ -15,6 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.block.StageBlockHandler;
+import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import org.jetbrains.annotations.Nullable;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
@@ -442,6 +443,9 @@ public class StageItemHandler {
                     
                     // Parse stage logic
                     rule.stagesLogic = ruleObj.has("stages_logic") ? ruleObj.get("stages_logic").getAsString() : "AND";
+                    if (ruleObj.has("priority") && ruleObj.get("priority").isJsonPrimitive()) {
+                        rule.priority = ruleObj.get("priority").getAsInt();
+                    }
                     rule.mods.addAll(LoadModGate.parseMods(ruleObj));
                     rule.modsLogic = LoadModGate.parseModsLogic(ruleObj);
                     
@@ -788,6 +792,7 @@ public class StageItemHandler {
                 active.add(rule);
             }
         }
+        RestrictionPriority.sortByPriorityDesc(active, r -> r.priority);
         return active;
     }
 
@@ -1105,6 +1110,12 @@ public class StageItemHandler {
     public static class StageItemRule {
         public String stagesLogic = "AND";
         public List<StageCondition> stages = new ArrayList<>();
+        /**
+         * When several rules match the same item, higher {@code priority} wins for exclusive
+         * presentation (viewer mode / hidden name). Default {@code 0}. Ties keep load order.
+         * Some item effects (cases, consequences) may still stack across active rules.
+         */
+        public int priority = 0;
         public List<LoadModCondition> mods = new ArrayList<>();
         public StagesLogic modsLogic = StagesLogic.DEF_AND;
         public boolean containersWhitelist = true;

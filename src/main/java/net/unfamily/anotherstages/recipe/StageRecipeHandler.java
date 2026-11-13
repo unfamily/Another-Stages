@@ -14,6 +14,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
 import net.unfamily.iskalib.load.LoadJson;
@@ -195,6 +196,9 @@ public final class StageRecipeHandler {
     private static StageRecipeRule parseRule(JsonObject ruleObj) {
         StageRecipeRule rule = new StageRecipeRule();
         rule.stagesLogic = ruleObj.has("stages_logic") ? ruleObj.get("stages_logic").getAsString() : "AND";
+        if (ruleObj.has("priority") && ruleObj.get("priority").isJsonPrimitive()) {
+            rule.priority = ruleObj.get("priority").getAsInt();
+        }
         if (ruleObj.has("stages") && ruleObj.get("stages").isJsonArray()) {
             for (JsonElement stageElement : ruleObj.getAsJsonArray("stages")) {
                 if (!stageElement.isJsonObject()) {
@@ -302,6 +306,7 @@ public final class StageRecipeHandler {
                 active.add(rule);
             }
         }
+        RestrictionPriority.sortByPriorityDesc(active, r -> r.priority);
         return active;
     }
 

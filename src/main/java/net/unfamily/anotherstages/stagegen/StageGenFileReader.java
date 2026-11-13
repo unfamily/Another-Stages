@@ -142,6 +142,9 @@ public final class StageGenFileReader {
         if (o.has("stages_logic")) {
             d.stagesLogic = o.get("stages_logic").getAsString();
         }
+        if (o.has("priority") && o.get("priority").isJsonPrimitive()) {
+            d.priority = o.get("priority").getAsInt();
+        }
         if (o.has("stages") && o.get("stages").isJsonArray()) {
             for (JsonElement el : o.getAsJsonArray("stages")) {
                 if (!el.isJsonObject()) {
