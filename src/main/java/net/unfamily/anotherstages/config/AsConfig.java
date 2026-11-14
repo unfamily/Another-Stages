@@ -126,9 +126,14 @@ public final class AsConfig {
             .define("create", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_CREATEADDITION = BUILDER
-            .comment("Gate Create Crafts & Additions Rolling Mill / Tesla Coil charging recipes.")
+            .comment("Gate Create Crafts & Additions Rolling Mill / Tesla Coil / Liquid Blaze Burner recipes.")
             .gameRestart()
             .define("createaddition", true);
+
+    public static final ModConfigSpec.BooleanValue MIXIN_CREATE_DRAGONS_PLUS = BUILDER
+            .comment("Gate Create Dragons Plus fan ending / freezing recipes.")
+            .gameRestart()
+            .define("create_dragons_plus", true);
 
     public static final ModConfigSpec.BooleanValue MIXIN_SLICEANDDICE = BUILDER
             .comment("Gate Create Slice & Dice Slicer (basin path also uses Create basin gate).")
@@ -327,6 +332,10 @@ public final class AsConfig {
 
     public static boolean mixinCreateAddition() {
         return loaded(MIXIN_CREATEADDITION, true);
+    }
+
+    public static boolean mixinCreateDragonsPlus() {
+        return loaded(MIXIN_CREATE_DRAGONS_PLUS, true);
     }
 
     public static boolean mixinSliceAndDice() {

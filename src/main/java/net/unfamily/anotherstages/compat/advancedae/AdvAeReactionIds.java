@@ -6,6 +6,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.pedroksl.advanced_ae.recipes.ReactionChamberRecipe;
 import net.pedroksl.advanced_ae.recipes.ReactionChamberRecipes;
+import net.unfamily.anotherstages.recipe.RecipeInstanceIds;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,11 +31,7 @@ public final class AdvAeReactionIds {
         if (level == null) {
             return null;
         }
-        for (RecipeHolder<ReactionChamberRecipe> holder : ReactionChamberRecipes.getRecipes(level)) {
-            if (holder.value() == reaction) {
-                return holder.id();
-            }
-        }
-        return null;
+        return RecipeInstanceIds.idOf(
+                reaction, ReactionChamberRecipes.class, ReactionChamberRecipes.getRecipes(level), RecipeHolder::id);
     }
 }

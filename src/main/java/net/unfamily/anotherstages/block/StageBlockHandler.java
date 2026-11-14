@@ -43,6 +43,15 @@ public final class StageBlockHandler {
     private static final List<StageBlockRule> DATAPACK_RULES = new ArrayList<>();
     private static final Map<String, StageBlockRule> SCRIPT_RULES = new HashMap<>();
     private static final Map<ResourceLocation, List<StageBlockRule>> BY_BLOCK = new HashMap<>();
+    /**
+     * Rules with {@code #tag}, {@code @mod}, or {@code regex:} matchers — cannot live in {@link #BY_BLOCK}.
+     * Scanned only after the exact-id index (not every rule on every lookup).
+     */
+    private static final List<StageBlockRule> BROAD_RULES = new ArrayList<>();
+    /** Exact-id index for {@code stop_tick} rules only (BE tick hot path). */
+    private static final Map<ResourceLocation, List<StageBlockRule>> STOP_TICK_BY_BLOCK = new HashMap<>();
+    /** Broad matchers among {@code stop_tick} rules only. */
+    private static final List<StageBlockRule> STOP_TICK_BROAD = new ArrayList<>();
     /** Fast path: any loaded rule has {@code stop_tick: true}. */
     private static boolean anyStopTickRules = false;
 
@@ -132,19 +141,35 @@ public final class StageBlockHandler {
 
     private static void rebuildIndexes() {
         BY_BLOCK.clear();
+        BROAD_RULES.clear();
+        STOP_TICK_BY_BLOCK.clear();
+        STOP_TICK_BROAD.clear();
         anyStopTickRules = false;
         for (StageBlockRule rule : allRules()) {
-            if (rule.stopTick) {
-                anyStopTickRules = true;
-            }
+            boolean broad = false;
+            boolean exact = false;
             for (String id : rule.blocks) {
                 if (id.startsWith("#") || id.startsWith("@") || StageIdMatchers.hasRegexPrefix(id)) {
+                    broad = true;
                     continue;
                 }
                 ResourceLocation blockId = ResourceLocation.tryParse(id);
                 if (blockId != null) {
                     BY_BLOCK.computeIfAbsent(blockId, k -> new ArrayList<>()).add(rule);
+                    if (rule.stopTick) {
+                        STOP_TICK_BY_BLOCK.computeIfAbsent(blockId, k -> new ArrayList<>()).add(rule);
+                    }
+                    exact = true;
                 }
+            }
+            if (broad || (!exact && !rule.blocks.isEmpty())) {
+                BROAD_RULES.add(rule);
+                if (rule.stopTick) {
+                    STOP_TICK_BROAD.add(rule);
+                }
+            }
+            if (rule.stopTick) {
+                anyStopTickRules = true;
             }
         }
     }
@@ -265,19 +290,20 @@ public final class StageBlockHandler {
         if (ruleCount() == 0 || state == null) {
             return null;
         }
-        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        Block block = state.getBlock();
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         List<StageBlockRule> candidates = new ArrayList<>(BY_BLOCK.getOrDefault(id, List.of()));
-        for (StageBlockRule rule : allRules()) {
+        for (StageBlockRule rule : BROAD_RULES) {
             if (candidates.contains(rule)) {
                 continue;
             }
-            if (matchesBlock(state.getBlock(), rule.blocks) && !matchesBlock(state.getBlock(), rule.exclude)) {
+            if (matchesBlock(block, rule.blocks) && !matchesBlock(block, rule.exclude)) {
                 candidates.add(rule);
             }
         }
         List<StageBlockRule> active = new ArrayList<>();
         for (StageBlockRule rule : candidates) {
-            if (matchesBlock(state.getBlock(), rule.exclude)) {
+            if (matchesBlock(block, rule.exclude)) {
                 continue;
             }
             if (stagesApply(rule, player, level)) {
@@ -285,6 +311,22 @@ public final class StageBlockHandler {
             }
         }
         return RestrictionPriority.pickHighest(active, r -> r.priority);
+    }
+
+    /**
+     * True when any {@code stop_tick} rule's block matchers can hit this block (stages ignored).
+     * Lets BE ticks skip {@link #findActiveRule} for the vast majority of tiles.
+     */
+    private static boolean couldMatchStopTick(Block block, ResourceLocation id) {
+        if (!STOP_TICK_BY_BLOCK.getOrDefault(id, List.of()).isEmpty()) {
+            return true;
+        }
+        for (StageBlockRule rule : STOP_TICK_BROAD) {
+            if (matchesBlock(block, rule.blocks) && !matchesBlock(block, rule.exclude)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean matchesBlock(Block block, List<String> list) {
@@ -431,7 +473,13 @@ public final class StageBlockHandler {
         if (!anyStopTickRules || level == null || pos == null || level.isClientSide()) {
             return false;
         }
-        StageBlockRule rule = findActiveRule(level.getBlockState(pos), player, level);
+        BlockState state = level.getBlockState(pos);
+        Block block = state.getBlock();
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
+        if (!couldMatchStopTick(block, id)) {
+            return false;
+        }
+        StageBlockRule rule = findActiveRule(state, player, level);
         return rule != null && rule.stopTick;
     }
 }

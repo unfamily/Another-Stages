@@ -14,10 +14,13 @@ import net.unfamily.anotherstages.recipe.RecipeStageGate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Create Mechanical Saw: refuse applying a stage-locked cutting recipe.
+ * Create Mechanical Saw: exclude stage-locked cutting recipes from the recipe list
+ * (so {@code start} does not begin a cycle); refuse {@code applyRecipe} as safety net.
  */
 @Mixin(value = SawBlockEntity.class, remap = false)
 public abstract class SawBlockEntityMixin {
@@ -27,6 +30,25 @@ public abstract class SawBlockEntityMixin {
     @Shadow(remap = false)
     private List<RecipeHolder<? extends Recipe<?>>> getRecipes() {
         throw new AssertionError();
+    }
+
+    @WrapMethod(method = "getRecipes", remap = false)
+    private List<RecipeHolder<? extends Recipe<?>>> anotherStages$filterRecipes(
+            Operation<List<RecipeHolder<? extends Recipe<?>>>> original) {
+        List<RecipeHolder<? extends Recipe<?>>> recipes = original.call();
+        if (!AsConfig.mixinCreate() || recipes == null || recipes.isEmpty()) {
+            return recipes;
+        }
+        SawBlockEntity self = (SawBlockEntity) (Object) this;
+        Level level = ((BlockEntity) (Object) self).getLevel();
+        UUID owner = MachineOwners.get(self);
+        List<RecipeHolder<? extends Recipe<?>>> allowed = new ArrayList<>(recipes.size());
+        for (RecipeHolder<? extends Recipe<?>> holder : recipes) {
+            if (!RecipeStageGate.isBlockedForOwner(holder.id(), owner, level)) {
+                allowed.add(holder);
+            }
+        }
+        return allowed;
     }
 
     @WrapMethod(method = "applyRecipe", remap = false)
@@ -39,7 +61,6 @@ public abstract class SawBlockEntityMixin {
         Level level = ((BlockEntity) (Object) self).getLevel();
         List<RecipeHolder<? extends Recipe<?>>> recipes = getRecipes();
         if (recipes == null || recipes.isEmpty()) {
-            original.call();
             return;
         }
         int index = this.recipeIndex;

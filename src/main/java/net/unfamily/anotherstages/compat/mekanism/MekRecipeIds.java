@@ -4,9 +4,11 @@ import mekanism.common.recipe.IMekanismRecipeTypeProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
+import net.unfamily.anotherstages.recipe.RecipeInstanceIds;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,21 +45,8 @@ public final class MekRecipeIds {
         if (recipe == null || level == null || typeProvider == null) {
             return null;
         }
-        ResourceLocation found = null;
-        for (RecipeHolder<?> holder : typeProvider.getRecipes(level)) {
-            if (holder.value() == recipe) {
-                found = holder.id();
-                break;
-            }
-        }
-        if (found == null) {
-            for (RecipeHolder<?> holder : typeProvider.getRecipes(level)) {
-                if (holder.value().equals(recipe)) {
-                    found = holder.id();
-                    break;
-                }
-            }
-        }
+        Collection<? extends RecipeHolder<?>> holders = typeProvider.getRecipes(level);
+        ResourceLocation found = RecipeInstanceIds.idOf(recipe, typeProvider, holders, RecipeHolder::id);
         if (found == null) {
             return null;
         }

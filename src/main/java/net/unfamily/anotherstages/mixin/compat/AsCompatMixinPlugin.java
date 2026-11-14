@@ -57,6 +57,9 @@ public final class AsCompatMixinPlugin implements IMixinConfigPlugin {
         if (lower.contains("createaddition") || lower.contains("compat.createaddition")) {
             return isLoaded("createaddition");
         }
+        if (lower.contains("createdragonsplus") || lower.contains("compat.createdragonsplus")) {
+            return isLoaded("create_dragons_plus") && isLoaded("create");
+        }
         if (lower.contains("sliceanddice") || lower.contains("compat.sliceanddice")) {
             return isLoaded("sliceanddice");
         }
