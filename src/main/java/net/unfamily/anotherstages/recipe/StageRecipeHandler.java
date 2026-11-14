@@ -16,6 +16,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.unfamily.anotherstages.compat.enderio.EnderIoRecipeIds;
 import net.unfamily.anotherstages.compat.mekanism.MekRecipeIds;
+import net.unfamily.anotherstages.recipe.RecipeInstanceIds;
 import net.unfamily.anotherstages.restriction.RestrictionPriority;
 import net.unfamily.anotherstages.util.StageIdMatchers;
 import net.unfamily.iskalib.load.LoadFilesystemBootstrap;
@@ -53,6 +54,13 @@ public final class StageRecipeHandler {
     private static final List<StageRecipeRule> PATTERN_RULES = new ArrayList<>();
 
     private static int RULE_REVISION;
+
+    /**
+     * Stage-independent: rules whose id/type/I/O matchers pass for a recipe id.
+     * Cleared on index rebuild (datapack / Kube partial or full reload). Holder required to cache.
+     */
+    private static final Map<Identifier, List<StageRecipeRule>> MATCHER_PASS_CACHE = new HashMap<>();
+    private static final List<StageRecipeRule> NO_MATCHING_RULES = List.of();
 
     private StageRecipeHandler() {}
 
@@ -154,6 +162,8 @@ public final class StageRecipeHandler {
             indexRule(rule);
         }
         RULE_REVISION++;
+        MATCHER_PASS_CACHE.clear();
+        RecipeInstanceIds.clear();
     }
 
     /** Bumps when datapack/script recipe indexes rebuild (JEI fingerprint). */
@@ -296,8 +306,30 @@ public final class StageRecipeHandler {
         if (recipeId == null || ruleCount() == 0) {
             return active;
         }
+        // Holder path reuses matcher-pass cache (reload-cleared). Wrapper-only JEI views skip cache.
+        List<StageRecipeRule> matching = holder != null
+                ? rulesPassingMatchers(recipeId, holder)
+                : rulesPassingMatchersUncached(recipeId, null, recipeView);
+        for (StageRecipeRule rule : matching) {
+            if (ruleAppliesClient(rule)) {
+                active.add(rule);
+            }
+        }
+        RestrictionPriority.sortByPriorityDesc(active, r -> r.priority);
+        return active;
+    }
+
+    /** JEI wrapper path: no holder → do not populate {@link #MATCHER_PASS_CACHE}. */
+    private static List<StageRecipeRule> rulesPassingMatchersUncached(
+            Identifier recipeId,
+            @Nullable RecipeHolder<?> holder,
+            @Nullable Object recipeView) {
         List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, recipeView);
+        if (candidates.isEmpty()) {
+            return NO_MATCHING_RULES;
+        }
         String recipeIdStr = recipeId.toString();
+        List<StageRecipeRule> passing = new ArrayList<>();
         for (StageRecipeRule rule : candidates) {
             if (excludedByAnyId(rule, recipeId, holder)) {
                 continue;
@@ -305,12 +337,9 @@ public final class StageRecipeHandler {
             if (!matchersPass(rule, holder, recipeIdStr, recipeView)) {
                 continue;
             }
-            if (ruleAppliesClient(rule)) {
-                active.add(rule);
-            }
+            passing.add(rule);
         }
-        RestrictionPriority.sortByPriorityDesc(active, r -> r.priority);
-        return active;
+        return passing.isEmpty() ? NO_MATCHING_RULES : passing;
     }
 
     private static boolean ruleAppliesClient(StageRecipeRule rule) {
@@ -409,11 +438,39 @@ public final class StageRecipeHandler {
             return false;
         }
         RecipeHolder<?> holder = resolveHolder(recipeId, level);
-        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, null);
-        if (candidates.isEmpty()) {
+        List<StageRecipeRule> matching = rulesPassingMatchers(recipeId, holder);
+        if (matching.isEmpty()) {
             return false;
         }
+        for (StageRecipeRule rule : matching) {
+            if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Rules that pass exclude + id/type/I/O matchers (stage conditions not evaluated).
+     * Cached per recipe id when {@code holder} is non-null until the next index rebuild.
+     */
+    private static List<StageRecipeRule> rulesPassingMatchers(
+            Identifier recipeId, @Nullable RecipeHolder<?> holder) {
+        if (holder != null) {
+            List<StageRecipeRule> cached = MATCHER_PASS_CACHE.get(recipeId);
+            if (cached != null) {
+                return cached;
+            }
+        }
+        List<StageRecipeRule> candidates = collectCandidates(recipeId, holder, null);
+        if (candidates.isEmpty()) {
+            if (holder != null) {
+                MATCHER_PASS_CACHE.put(recipeId, NO_MATCHING_RULES);
+            }
+            return NO_MATCHING_RULES;
+        }
         String recipeIdStr = recipeId.toString();
+        List<StageRecipeRule> passing = new ArrayList<>();
         for (StageRecipeRule rule : candidates) {
             if (excludedByAnyId(rule, recipeId, holder)) {
                 continue;
@@ -421,11 +478,13 @@ public final class StageRecipeHandler {
             if (!matchersPass(rule, holder, recipeIdStr, null)) {
                 continue;
             }
-            if (ruleApplies(rule, ownerUuid, level, onlinePlayer)) {
-                return true;
-            }
+            passing.add(rule);
         }
-        return false;
+        List<StageRecipeRule> frozen = passing.isEmpty() ? NO_MATCHING_RULES : List.copyOf(passing);
+        if (holder != null) {
+            MATCHER_PASS_CACHE.put(recipeId, frozen);
+        }
+        return frozen;
     }
 
     /**
@@ -480,13 +539,9 @@ public final class StageRecipeHandler {
 
     private static List<StageRecipeRule> collectCandidates(
             Identifier recipeId, @Nullable RecipeHolder<?> holder, @Nullable Object recipeView) {
-        List<StageRecipeRule> out = new ArrayList<>();
+        LinkedHashSet<StageRecipeRule> out = new LinkedHashSet<>();
         for (Identifier id : dualMatchIds(recipeId, holder)) {
-            for (StageRecipeRule rule : BY_RECIPE_ID.getOrDefault(id, Collections.emptyList())) {
-                if (!out.contains(rule)) {
-                    out.add(rule);
-                }
-            }
+            out.addAll(BY_RECIPE_ID.getOrDefault(id, Collections.emptyList()));
         }
         if (holder != null) {
             Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(holder.value().getType());
@@ -506,23 +561,11 @@ public final class StageRecipeHandler {
             cookingType = MekRecipeIds.vanillaCookingTypeFor(recipeId, holder);
         }
         if (cookingType != null) {
-            for (StageRecipeRule rule : BY_RECIPE_TYPE.getOrDefault(cookingType, Collections.emptyList())) {
-                if (!out.contains(rule)) {
-                    out.add(rule);
-                }
-            }
+            out.addAll(BY_RECIPE_TYPE.getOrDefault(cookingType, Collections.emptyList()));
         }
-        for (StageRecipeRule io : IO_RULES) {
-            if (!out.contains(io)) {
-                out.add(io);
-            }
-        }
-        for (StageRecipeRule pattern : PATTERN_RULES) {
-            if (!out.contains(pattern)) {
-                out.add(pattern);
-            }
-        }
-        return out;
+        out.addAll(IO_RULES);
+        out.addAll(PATTERN_RULES);
+        return new ArrayList<>(out);
     }
 
     /**
